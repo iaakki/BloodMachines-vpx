@@ -57,13 +57,12 @@
 '			   reverted the old EOBbonus speed
 '1.26 iaakki - Cabinetmode scorbit flashers repositioned, Flips gets disabled when drained, game starting is not possible anymore until Scorbit has loaded properly
 '1.27 iaakki - Fixed paths with spaces issue, renamed all pupchecks to HasPup variable, some minor improvements, possible fix for 4 player bug
-'1.28 iaakki - HighScore input without pup crash fix, qrview binary moved to tables folder, csv log moved to BMQR folder
+'1.28 iaakki - HighScore input without pup crash fix, qrview binary moved to tables folder, csv log moved to BMQR folder, BMQR folder is now created if not existing.
 
 'todo: 
 ' - ssf changes??
 ' - Is SSF sounds for flips really disabled when using DOF?
 '- VR backglass for pupdmd
-'- move qrview into tables folder
 '- Check can one find the place where vpx is loaded, or will we update the infos that exes needs to be copied into real tables folder. 
 
 
@@ -18549,7 +18548,6 @@ Sub FScorbitQRclaim_Timer()		'updates the QR claim image into a flasher
 	FScorbitQRclaim.VideoCapUpdate = "QRView"
 	dim oWS4
 	set oWS4 = createobject("wscript.shell")
-	oWS4.Run "taskkill /im QRView.exe", , True
 	oWS4.Run "taskkill /im QRView.exe", , True
 
 	FScorbitQRclaim.timerenabled = False
