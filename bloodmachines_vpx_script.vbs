@@ -3870,8 +3870,8 @@ Sub Table1_KeyDown(ByVal Keycode)
 	If keycode = AddCreditKey or keycode = AddCreditKey2 Then
 		Credits=Credits+1 : If Credits>30 Then Credits=30 Else Creditblink=20
 		DOF 133,2 'add credits
-		If pDMDmode="attract" then
-		pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
+		If pDMDmode="attract" and hasPUP then
+		    pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
 		End If
 		if Credits > 0 then DOF 122,1 'start button light
 		SaveCredits
@@ -20481,6 +20481,7 @@ Dim pDMD_CurSequencePos:pDMD_CurSequencePos=0
 Dim pDMDmode: pDMDmode="default"
 
 Sub pDMD_Sequence_Timer
+	if not HasPuP then exit sub
 	pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
 	puPlayer.LabelSet pDMD,"GameOver","Game Over" ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
 	pDMD_CurSequencePos=pDMD_CurSequencePos+1
