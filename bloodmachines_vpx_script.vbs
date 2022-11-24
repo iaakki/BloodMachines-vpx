@@ -58,6 +58,7 @@
 '1.26 iaakki - Cabinetmode scorbit flashers repositioned, Flips gets disabled when drained, game starting is not possible anymore until Scorbit has loaded properly
 '1.27 iaakki - Fixed paths with spaces issue, renamed all pupchecks to HasPup variable, some minor improvements, possible fix for 4 player bug
 '1.28 iaakki - HighScore input without pup crash fix, qrview binary moved to tables folder, csv log moved to BMQR folder, BMQR folder is now created if not existing.
+'			   QR image casting time raised from 500 to 700ms as some slower systems may fail to load the image that fast
 
 'todo: 
 ' - ssf changes??
