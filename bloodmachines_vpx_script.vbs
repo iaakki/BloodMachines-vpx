@@ -72,13 +72,13 @@ Randomize
 
 
 	
-Const HasPuP = false   ' False=FlexDMD (default) , True=PUPDMD
+Const HasPuP = True   ' False=FlexDMD (default) , True=PUPDMD
 
 '**************************
 '   PinUp Player USER Config
 '**************************
 
-dim PuPDMDDriverType: PuPDMDDriverType=0   ' 0=LCD DMD, 1=RealDMD 2=FULLDMD (large/High LCD)
+dim PuPDMDDriverType: PuPDMDDriverType=2   ' 0=LCD DMD, 1=RealDMD 2=FULLDMD (large/High LCD)
 dim useRealDMDScale : useRealDMDScale=1    ' 0 or 1 for RealDMD scaling.  Choose which one you prefer.
 dim useDMDVideos    : useDMDVideos=true   ' true or false to use DMD splash videos.
 Dim pGameName       : pGameName="bloodmach"  'pupvideos foldername, probably set to cGameName in realworld
@@ -3870,8 +3870,8 @@ Sub Table1_KeyDown(ByVal Keycode)
 	If keycode = AddCreditKey or keycode = AddCreditKey2 Then
 		Credits=Credits+1 : If Credits>30 Then Credits=30 Else Creditblink=20
 		DOF 133,2 'add credits
-		If pDMDmode="attract" then
-		pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
+		If pDMDmode="attract" and hasPUP then
+		    pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
 		End If
 		if Credits > 0 then DOF 122,1 'start button light
 		SaveCredits
@@ -3890,6 +3890,10 @@ Sub Table1_KeyDown(ByVal Keycode)
 
 	if keycode = StartGameKey then soundStartButton
 	   If pDMDmode="attract" And Credits=0 Then
+		puPlayer.LabelShowPage pDMD,9,1,""
+		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
+	  End if
+		If pDMDmode="go" And Credits=0 Then
 		puPlayer.LabelShowPage pDMD,9,1,""
 		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
 
@@ -3920,6 +3924,8 @@ Sub Table1_KeyDown(ByVal Keycode)
 		If keycode = CenterTiltKey Then Nudge 0, 1:SoundNudgeCenter:CheckTilt
 		If keycode = MechanicalTilt Then SoundNudgeCenter:CheckTilt
 		If keycode = PlungerKey Then ShootGun true
+		If keycode = RightFlipperKey  Then SkiptoEndTotal
+		If keycode = LeftFlipperKey  Then SkiptoEndTotal
 		If NOT Tilted Then			
 
 			if StagedFlipperMod = 1 Then
@@ -5202,13 +5208,13 @@ Sub VUK1_Hit
 				End Select
 			Else								'pup
 				Select Case MissionSelect
-					Case 1: KickDelay = 13000
-					Case 2: KickDelay = 12500
-					Case 3: KickDelay = 12500
-					Case 4: KickDelay = 12500
-					Case 5: KickDelay = 12500
-					Case 6: KickDelay = 12500
-					Case 7: KickDelay = 12500
+					Case 1: KickDelay = 6500
+					Case 2: KickDelay = 6500
+					Case 3: KickDelay = 6500
+					Case 4: KickDelay = 6500
+					Case 5: KickDelay = 6500
+					Case 6: KickDelay = 6500
+					Case 7: KickDelay = 6500
 				End Select
 			end if
 			Mission_Begin
@@ -17258,6 +17264,7 @@ Dim EobBonusCounter
 Dim TOTALEOBBONUS
 Dim TOTALEOBBONUSvisible
 dim CurrentMissionCount
+Dim SkipEnd
 Sub DMD_EOB_Bonus
 
 	EobBonusCounter = EobBonusCounter + 1
@@ -17276,6 +17283,7 @@ Sub DMD_EOB_Bonus
 	if HasPuP then
 		Select Case EobBonusCounter
 			Case    2 : StopVideosPlaying
+						SkipEnd = True
 						DMD_ShowImages "attract",1,500,-1,0
 						TOTALEOBBONUS = 0
 						TOTALEOBBONUS = TOTALEOBBONUS + (CurrentMissionCount * bonus_EOB_Missions )
@@ -17413,9 +17421,10 @@ Sub DMD_EOB_Bonus
 							playsound "EFX_gun_load",1,0.07				
 							DMD_ShowText FormatScore( TOTALEOBBONUSvisible * 10 ),2,FontWhite3,22,False,40,3000
 						PuPlayer.LabelShowPage pDMD,9,1.5,""
-						puPlayer.LabelSet pDMD,"Multi", "10X",1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"						
+						puPlayer.LabelSet pDMD,"Multi", "10X",1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
 						End If
 			Case  830 : pDMDSetPage(pDMDBlank)
+						SkipEnd = False
 			Case  840: Score(currentplayer) = Score(currentplayer) + ( TOTALEOBBONUS * BonusMultiplier(CurrentPlayer) )
 						DMD_ShowText "TOTAL SCORE" ,1,FontWhite3,11,False,40,3000
 						PuPEvent(546)
@@ -20439,7 +20448,7 @@ end Sub
 
 Sub pDMDGameOver
 	pDMDSetPage(9)
-	pDMDmode="attract"
+	pDMDmode="go"
 	pDMD_CurSequencePos=0
 	pDMD_Sequence.Interval = 500
 	pDMD_Sequence.Enabled=true
@@ -20472,6 +20481,7 @@ Dim pDMD_CurSequencePos:pDMD_CurSequencePos=0
 Dim pDMDmode: pDMDmode="default"
 
 Sub pDMD_Sequence_Timer
+	if not HasPuP then exit sub
 	pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
 	puPlayer.LabelSet pDMD,"GameOver","Game Over" ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
 	pDMD_CurSequencePos=pDMD_CurSequencePos+1
@@ -20483,12 +20493,31 @@ Sub pDMD_Sequence_Timer
 		Case 4 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 2",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
 		Case 5 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 3",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
 		Case 6 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(4)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
-		Case 7 pDMDSetPage(0):pDMD_Sequence.Interval = 1
+	    Case 7 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(4)),0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",0,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 20
 		Case 8 PuPEvent(406):pDMD_Sequence.Interval = 3000
 		Case 9 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
 		Case 10 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
 		Case 11 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
 		Case 12 pDMDSetPage(0):pDMD_Sequence.Interval =1 
+
+		Case Else
+		pDMDSetPage(9)
+		pDMD_CurSequencePos=0
+		end Select
+	end if
+	 if pDMDmode="go" then
+		Select Case pDMD_CurSequencePos
+		Case 1 PuPEvent(405) :pDMD_Sequence.Interval = 500
+		Case 2 pDMDSetPage(9):puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 1",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 3 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 2",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
+		Case 4 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 3",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
+		Case 5 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(4)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
+		Case 6 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(4)),0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",0,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 20
+		Case 7 PuPEvent(406):pDMD_Sequence.Interval = 3000
+		Case 8 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
+		Case 9 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
+		Case 10 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
+		Case 11 pDMDSetPage(0):pDMD_Sequence.Interval =1 
 
 		Case Else
 		pDMDSetPage(9)
@@ -21050,6 +21079,16 @@ Sub PlayerUpFull
 	PuPEvent 891
 	End If
 End Sub
+
+Sub SkiptoEndTotal
+ If	SkipEnd = False then exit Sub
+ If SkipEnd  = True Then
+  EobBonusCounter = 810
+  SkipEnd = False	
+End if
+End Sub
+
+
 
 
 'High Score
