@@ -59,6 +59,7 @@
 '1.27 iaakki - Fixed paths with spaces issue, renamed all pupchecks to HasPup variable, some minor improvements, possible fix for 4 player bug
 '1.28 iaakki - HighScore input without pup crash fix, qrview binary moved to tables folder, csv log moved to BMQR folder, BMQR folder is now created if not existing.
 '			   QR image casting time raised from 500 to 700ms as some slower systems may fail to load the image that fast
+'1.31 iaakki - all efx sounds uses calloutvolume now, SSF redone using Fleep sounds from TNA. Custom bumpersounds mixes from TNA and BPT samples, various fixes
 
 'todo: 
 ' - ssf changes??
@@ -93,7 +94,7 @@ Const VRRoom = 0					'0 - VR Room off, 1 - 360 Room, 2 - Minimal Room, 3 - Ultra
 
 '/////////////////////-----Scorbit Options-----////////////////////
 
-Const ScorbitActive				= 0		' Is Scorbit Active	
+Const ScorbitActive				= 1		' Is Scorbit Active	
 Const     ScorbitShowClaimQR	= 1 	' If Scorbit is active this will show a QR Code in the bottom left on ball 1 that allows player to claim the active player from the app
 'Const     ScorbitClaimSmall		= 0 	' Make Claim QR Code smaller for high res backglass 
 Const     ScorbitUploadLog		= 1 	' Store local log and upload after the game is over 
@@ -109,10 +110,10 @@ Const DMDColor = 2					'1 - Orange, 2 - Red, 3 - White
 
 Const VolumeDial = 0.8				'Recommended values should be no greater than 1.
 
-Const MusicVol = 0'.25				'Separate setting that only affects music volume. Range from 0 to 1. 
+Const MusicVol = 0.25				'Separate setting that only affects music volume. Range from 0 to 1. 
 '--> 'Default play mode plays 3 different really mellow tunes. Missions and MB's have more uplifting tunes.
 Const StartupTune = false			'Play some opening tune after loading the game, I prefer you to disable this after you are sure you hear the music correctly
-Const CalloutVol = 0				'Separate setting that only affects verbal callout volume. Range from 0 to 1
+Const CalloutVol = 1				'Separate setting that only affects verbal callout volume. Range from 0 to 1
 
 Const DynamicBallShadowsOn = 1		'0 = no dynamic ball shadow, 1 = enable dynamic ball shadow
 Const AmbientBallShadowOn = 1		'0 = Static shadow under ball ("flasher" image, like JP's)
@@ -3948,7 +3949,7 @@ Sub Table1_KeyDown(ByVal Keycode)
 			If keycode = LeftFlipperKey and bFlippersEnabled Then 
 '				LeftF = 1 : Flipper_Info = 0
 				
-				DOF 101,1
+'				DOF 101,1
 
 				If skillshot=0 Then
 					if Not CurrentMission = 5 And Not WizardPhase = 3 then
@@ -3966,7 +3967,7 @@ Sub Table1_KeyDown(ByVal Keycode)
 
 				FlipperActivate LeftFlipper, LFPress
 				LF.Fire
-
+				FlipperHoldCoilLeft SoundOn, LeftFlipper
 				'over ramp flipper
 				if StagedFlipperMod = 0 then
 					Flipper1.RotateToEnd
@@ -6119,6 +6120,10 @@ dim gate4status
 Sub swLeftOrbTrigger2_hit 
     If Tilted Then Exit Sub
 	WriteToLog "swLeftOrbTrigger2_hit", ""
+
+	'fleep
+	BallGuideOrbitLeft_Roll_Down()
+
 	If SwitchRecentlyHit("swLeftOrbTrigger1") Then
 		DOF 136,2 'left orbit
 		startB2S 1
@@ -6199,6 +6204,12 @@ End Sub
 Sub swRightOrbTrigger2_hit 
     If Tilted Then Exit Sub
 	WriteToLog "swRightOrbTrigger2_hit", ""
+
+	'fleep sounds
+	BallGuideOrbitRight_Roll_Up()
+	BallGuideOrbitRight_Roll_Down()
+	StopMetalRollWhenBallRollsSlowFromShooter = 1
+
 	If SwitchRecentlyHit("swRightOrbTrigger1") Then
 		DOF 137,2 'right orbit
 		startB2S 1
@@ -12689,9 +12700,9 @@ Sub AdvanceToMimaMB
 End Sub
 
 
-Sub TargetScavenge1_Hit : DTHit 1 : End Sub
-Sub TargetScavenge2_Hit : DTHit 2 : End Sub
-Sub TargetScavenge3_Hit : DTHit 3 : End Sub
+Sub TargetScavenge1_Hit : DTHit 1 : TargetBouncer Activeball, 1.3 : End Sub
+Sub TargetScavenge2_Hit : DTHit 2 : TargetBouncer Activeball, 1.3 : End Sub
+Sub TargetScavenge3_Hit : DTHit 3 : TargetBouncer Activeball, 1.3 : End Sub
 
 
 
@@ -12954,7 +12965,8 @@ Sub Bumper1_Hit
 		TracyPupCount
 		CheckHeartOfSteelShot
 '		RandomSoundBumperTop Bumper1
-		RandomSoundPopBumperDOF Bumper1, 105, DOFPulse
+'		RandomSoundPopBumperDOF Bumper1, 105, DOFPulse
+		RandomSoundJetBumperLeftDOF Bumper1, 105, DOFPulse
 		RandomSoundBallBounceAfterPopBumper()
 		PlaySound "EFX_jolt",0,CalloutVol,0,0,1,1,1
 		If CurrentMission=0 Then Next_MissionSelect
@@ -12976,7 +12988,8 @@ Sub Bumper2_Hit
 		CheckHeartOfSteelShot
 		PlaySound "EFX_jolt",0,CalloutVol,0,0,1,1,1
 '		RandomSoundBumperMiddle Bumper2
-		RandomSoundPopBumperDOF Bumper2, 106, DOFPulse
+'		RandomSoundPopBumperDOF Bumper2, 106, DOFPulse
+		RandomSoundJetBumperLowDOF Bumper2, 106, DOFPulse
 		RandomSoundBallBounceAfterPopBumper()
 		If CurrentMission=0 Then Next_MissionSelect
 '		shake_tracy_shake.enabled = true
@@ -12997,7 +13010,8 @@ Sub Bumper3_Hit
 		CheckHeartOfSteelShot
 		PlaySound "EFX_jolt",0,CalloutVol,0,0,1,1,1
 '		RandomSoundBumperBottom Bumper3
-		RandomSoundPopBumperDOF Bumper3, 107, DOFPulse
+'		RandomSoundPopBumperDOF Bumper3, 107, DOFPulse
+		RandomSoundJetBumperUpDOF Bumper3, 107, DOFPulse
 		RandomSoundBallBounceAfterPopBumper()
 		If CurrentMission=0 Then Next_MissionSelect
 		CounterBallSearch = 0
@@ -13093,6 +13107,7 @@ End Sub
 
 
 Sub swLeftOutlane_unhit
+	RandomSoundLanes
 	If Tilted Then Exit Sub
 	If cLightKB2.state=1 Then
 		DOF 111,2
@@ -13104,7 +13119,8 @@ PuPEvent(575)
 		plungerKB.Strength = 45
 		plungerKB.AutoFire
 		plunger1.Fire 'This is just for show (momentum trasfer is Zero)
-		playsound SoundFX("fx_kicker",DOFContactors) 'ssftodo
+'		playsound SoundFX("fx_kicker",DOFContactors)
+		RandomSoundLockingKickerSolenoid
 		plunger1.PullBack
 		'EnableBallSaver 1
 		If cLightKB1.state=1 Then
@@ -13120,6 +13136,7 @@ End Sub
 
 
 Sub swLeftInLane_Hit
+	RandomSoundInlanes
 	If Tilted Then Exit Sub
 	if CurrentMission = 5 Or WizardPhase = 3 then exit sub
 	AddScore score_Inlanes
@@ -13132,6 +13149,7 @@ End Sub
 
 
 Sub swRightInLane_Hit
+	RandomSoundInlanes
 	If Tilted Then Exit Sub
 	if CurrentMission = 5 Or WizardPhase = 3 then exit sub
 	AddScore score_Inlanes
@@ -13144,6 +13162,7 @@ End Sub
 
 
 Sub swRightOutLane_Hit
+	RandomSoundLanes
 	If Tilted Then Exit Sub
 	if CurrentMission = 5 Or WizardPhase = 3 then exit sub
 	AddScore score_Outlanes
@@ -13775,9 +13794,6 @@ End Sub
 Const LiveDistanceMin = 30  'minimum distance in vp units from flipper base live catch dampening will occur
 Const LiveDistanceMax = 114  'maximum distance in vp units from flipper base live catch dampening will occur (tip protection)
 
-'######################### Add new dampener to CheckLiveCatch 
-'#########################    Note the updated flipper angle check to register if the flipper gets knocked slightly off the end angle
-
 Sub CheckLiveCatch(ball, Flipper, FCount, parm) 'Experimental new live catch
     Dim Dir
     Dir = Flipper.startangle/Abs(Flipper.startangle)    '-1 for Right Flipper
@@ -13790,32 +13806,29 @@ Sub CheckLiveCatch(ball, Flipper, FCount, parm) 'Experimental new live catch
             else
                     LiveCatchBounce = Abs((LiveCatch/2) - CatchTime)        'Partial catch when catch happens a bit late
             end If
-			'debug.print "catch bounce: " & LiveCatchBounce
+
             If LiveCatchBounce = 0 and ball.velx * Dir > 0 Then ball.velx = 0
-            ball.vely = LiveCatchBounce * (16 / LiveCatch) ' Multiplier for inaccuracy bounce
+            ball.vely = LiveCatchBounce * (32 / LiveCatch) ' Multiplier for inaccuracy bounce
             ball.angmomx= 0
             ball.angmomy= 0
             ball.angmomz= 0
     Else
-        If Abs(Flipper.currentangle) <= Abs(Flipper.endangle) + 1 Then FlippersD.Dampenf Activeball, parm, 2
+        If Abs(Flipper.currentangle) <= Abs(Flipper.endangle) + 1 Then FlippersD.Dampenf Activeball, parm
     End If
 End Sub
 
-'*****************************************************************************************************
-'*******************************************************************************************************
-'END nFOZZY FLIPPERS'
-
 
 '******************************************************
-'				FLIPPER AND RUBBER CORRECTION
+'****  END FLIPPER CORRECTIONS
 '******************************************************
 
-'****************************************************************************
-'PHYSICS DAMPENERS
-
-'These are data mined bounce curves, 
-'dialed in with the in-game elasticity as much as possible to prevent angle / spin issues.
-'Requires tracking ballspeed to calculate COR
+'******************************************************
+'****  PHYSICS DAMPENERS
+'******************************************************
+'
+' These are data mined bounce curves, 
+' dialed in with the in-game elasticity as much as possible to prevent angle / spin issues.
+' Requires tracking ballspeed to calculate COR
 
 
 Sub dPosts_Hit(idx) 
@@ -13876,9 +13889,6 @@ FlippersD.addpoint 0, 0, 1.1
 FlippersD.addpoint 1, 3.77, 0.99
 FlippersD.addpoint 2, 6, 0.99
 
-'######################### Add Dampenf to Dampener Class 
-'#########################    Only applies dampener when abs(velx) < 2 and vely < 0 and vely > -3.75 
-
 Class Dampener
 	Public Print, debugOn 'tbpOut.text
 	public name, Threshold 	'Minimum threshold. Useful for Flippers, which don't have a hit threshold.
@@ -13894,11 +13904,7 @@ Class Dampener
 		if threshold then if BallSpeed(aBall) < threshold then exit sub end if end if
 		dim RealCOR, DesiredCOR, str, coef
 		DesiredCor = LinearEnvelope(cor.ballvel(aBall.id), ModIn, ModOut )
-		if cor.ballvel(aBall.id) = 0 then
-			RealCOR = BallSpeed(aBall) / (cor.ballvel(aBall.id) + 0.001) 'hack
-		Else
-			RealCOR = BallSpeed(aBall) / cor.ballvel(aBall.id)
-		end If
+		RealCOR = BallSpeed(aBall) / cor.ballvel(aBall.id)
 		coef = desiredcor / realcor 
 		if debugOn then str = name & " in vel:" & round(cor.ballvel(aBall.id),2 ) & vbnewline & "desired cor: " & round(desiredcor,4) & vbnewline & _
 		"actual cor: " & round(realCOR,4) & vbnewline & "ballspeed coef: " & round(coef, 3) & vbnewline 
@@ -13908,60 +13914,14 @@ Class Dampener
 		if debugOn then TBPout.text = str
 	End Sub
 
-	public sub Dampenf(aBall, parm, ver)
+	public sub Dampenf(aBall, parm) 'Rubberizer is handle here
 		dim RealCOR, DesiredCOR, str, coef
-		If ver = 1 Then
-
-			DesiredCor = LinearEnvelope(cor.ballvel(aBall.id), ModIn, ModOut )
-			if cor.ballvel(aBall.id) = 0 then
-                RealCOR = BallSpeed(aBall) / (cor.ballvel(aBall.id) + 0.001) 'hack
-            Else
-                RealCOR = BallSpeed(aBall) / cor.ballvel(aBall.id)
-            end If
-			coef = desiredcor / realcor 
-			If abs(aball.velx) < 2 and aball.vely < 0 and aball.vely > -3.75 then 
-				'debug.print "     parm: " & parm & " momz: " & aball.angmomz &" velx: "& aball.vely
-				aBall.velx = aBall.velx * coef : aBall.vely = aBall.vely * coef
-
-				if (aball.velx > 0 And aball.angmomz > 0) Or (aball.velx < 0 And aball.angmomz < 0) then
-			        aball.angmomz = aball.angmomz * -0.7								'spin reversal
-					'debug.print "reverse"
-				Else
-					aball.angmomz = aball.angmomz * 1.2
-				end if
-				'debug.print " --> parm: " & parm & " momz: " & aball.angmomz &" velx: "& aball.vely
-			End If
-		Elseif ver = 2 Then
-			If parm < 10 And parm > 2 And Abs(aball.angmomz) < 15 And aball.vely < 0 then	'medium collision
-				'debug.print "     parm: " & parm & " momz: " & aball.angmomz &" velx: "& aball.vely
-				aball.angmomz = aball.angmomz * 1.2
-				aball.vely = aball.vely * 1.2
-				'debug.print "---> parm: " & parm & " momz: " & aball.angmomz &" velx: "& aball.vely
-			Elseif parm <= 2 and parm > 0.2 And aball.vely < 0 Then							'soft collision
-				'debug.print "***     parm: " & parm & " momz: " & aball.angmomz &" velx: "& aball.vely
-				if (aball.velx > 0 And aball.angmomz > 0) Or (aball.velx < 0 And aball.angmomz < 0) then
-			        aball.angmomz = aball.angmomz * -0.7								'spin reversal
-					'debug.print "reverse"
-				Else
-					aball.angmomz = aball.angmomz * 1.2
-				end if
-				aball.vely = aball.vely * 1.4
-				'debug.print "*** --->parm: " & parm & " momz: " & aball.angmomz &" velx: "& aball.vely
-			End if
-		Elseif ver = 3 Then
-'			dim RealCOR, DesiredCOR, str, coef
-			DesiredCor = LinearEnvelope(cor.ballvel(aBall.id), ModIn, ModOut )
-			if cor.ballvel(aBall.id) = 0 then
-                RealCOR = BallSpeed(aBall) / (cor.ballvel(aBall.id) + 0.001) 'hack
-            Else
-                RealCOR = BallSpeed(aBall) / cor.ballvel(aBall.id)
-            end If
-			coef = desiredcor / realcor 
-			If abs(aball.velx) < 2 and aball.vely < 0 and aball.vely > -3.75 then 
-				'debug.print "     parm: " & parm & " momz: " & aball.angmomz &" velx: "& aball.vely
-				aBall.velx = aBall.velx * coef : aBall.vely = aBall.vely * coef
-				'debug.print " --> parm: " & parm & " momz: " & aball.angmomz &" velx: "& aball.vely
-			End If
+		DesiredCor = LinearEnvelope(cor.ballvel(aBall.id), ModIn, ModOut )
+		RealCOR = BallSpeed(aBall) / (cor.ballvel(aBall.id)+0.0001)
+		coef = desiredcor / realcor 
+		If abs(aball.velx) < 2 and aball.vely < 0 and aball.vely > -3.75 then 
+			aBall.velx = aBall.velx * coef : aBall.vely = aBall.vely * coef
+'			debug.print "dampen f"
 		End If
 	End Sub
 
@@ -13978,7 +13938,6 @@ Class Dampener
 		dim str, x : for x = 0 to uBound(a1) : str = str & x & ": " & round(a1(x),4) & ", " & round(a2(x),4) & vbnewline : next
 		TBPout.text = str
 	End Sub
-	
 
 End Class
 
@@ -14212,7 +14171,7 @@ Function DTAnimate(primary, secondary, prim, switch,  animate)
 		prim.roty = DTMaxBend * sin(rangle)
 		animate = 2
 '		SoundDropTargetDrop prim
-		debug.print "drop " & Switch
+'		debug.print "drop " & Switch
 		Select Case Switch
 			case 1: SoundDropTarget1_Release
 			case 2: SoundDropTarget2_Release
@@ -14298,7 +14257,7 @@ Function DTAnimate(primary, secondary, prim, switch,  animate)
 
 			primary.collidable = 1
 			secondary.collidable = 0
-			debug.print "raise " & Switch
+'debug.print "raise " & Switch
 			Select Case Switch
 				case 1: DropTarget1_Reset_Coil
 				case 2: DropTarget2_Reset_Coil
@@ -14535,31 +14494,77 @@ End Sub
 Sub RampRoll_Timer():RampRollUpdate:End Sub
 
 
+'//  Calculates the roll volume of the sound based on the ball speed
+Dim TempBallVelPlastic
+Function VolPlasticMetalRampRoll(ball)
+	'VolPlasticMetalRampRoll = RollingOnDiscSoundFactor * 0.0005 * Csng(BallVel(ball) ^3)
+	TempBallVelPlastic = Csng((INT(SQR((ball.VelX^2)+(ball.VelY^2))))/RollingSoundFactor)
+	If TempBallVelPlastic = 1 Then TempBallVelPlastic = 0.999
+	If TempBallVelPlastic = 0 Then TempBallVelPlastic = 0.001
+	'debug.print TempBallVel
+	TempBallVelPlastic = Csng(1/(1+(0.275*(((0.75*TempBallVelPlastic)/(1-TempBallVelPlastic))^(-2)))))
+	VolPlasticMetalRampRoll = TempBallVelPlastic
+End Function
+
+''//  Calculates the roll pitch of the sound based on the ball speed
+'Dim TempPitchBallVel
+'Function PitchPlayfieldRoll(ball) ' Calculates the roll pitch of the sound based on the ball speed
+'	'PitchPlayfieldRoll = BallVel(ball) ^2 * 15
+'	'PitchPlayfieldRoll = Csng(BallVel(ball))/50 * 10000
+'	'PitchPlayfieldRoll = (1-((Csng(BallVel(ball))/50)^0.2)) * 20000
+'
+'	'PitchPlayfieldRoll = (2*((Csng(BallVel(ball)))^0.7))/(2+(Csng(BallVel(ball)))) * 16000
+'	TempPitchBallVel = Csng((INT(SQR((ball.VelX^2)+(ball.VelY^2))))/50)
+'	If TempPitchBallVel = 1 Then TempPitchBallVel = 0.999
+'	If TempPitchBallVel = 0 Then TempPitchBallVel = 0.001
+'	TempPitchBallVel = Csng(1/(1+(0.275*(((0.75*TempPitchBallVel)/(1-TempPitchBallVel))^(-2))))) * 10000
+'	PitchPlayfieldRoll = TempPitchBallVel
+'End Function
+
+'//  Calculates the pitch of the sound based on the ball speed.
+''//  Used for plastic ramps roll sound
+'Function PitchPlasticRamp(ball)
+'    PitchPlasticRamp = BallVel(ball) * 20
+'End Function
+
+
+
 Sub RampRollUpdate()		'Timer update
 	dim x : for x = 1 to uBound(RampBalls)
 		if Not IsEmpty(RampBalls(x,1) ) then 
 			if BallVel(RampBalls(x,0) ) > 1 then ' if ball is moving, play rolling sound
 				If RampType(x) then 
-					PlaySound("RampLoop" & x & "_amp9"), -1, VolPlayfieldRoll(RampBalls(x,0)) * RampRollVolume * VolumeDial, AudioPan(RampBalls(x,0)), 0, BallPitchV(RampBalls(x,0)), 1, 0, AudioFade(RampBalls(x,0))				
-					StopSound("wireloop" & x & "_amp9")
+'					PlaySound("RampLoop" & x & "_amp9"), -1, VolPlayfieldRoll(RampBalls(x,0)) * RampRollVolume * VolumeDial, AudioPan(RampBalls(x,0)), 0, BallPitchV(RampBalls(x,0)), 1, 0, AudioFade(RampBalls(x,0))				
+'					StopSound("wireloop" & x & "_amp9")
+					StopSound (Cartridge_Metal_Ramps & "_Ramp_Left_Metal_Wire_BallRoll_" & x)
+					PlaySound (Cartridge_Plastic_Ramps & "_Ramp_Left_Plastic_BallRoll_" & x), 0, (VolPlasticMetalRampRoll(RampBalls(x,0))) * PlasticRampRollSoundFactor * RampRollVolume * VolumeDial * 1.25, AudioPan(RampBalls(x,0)), 0, 0, 1, 0, AudioFade(RampBalls(x,0))
+
 				Else
-					StopSound("RampLoop" & x & "_amp9")
-					PlaySound("wireloop" & x & "_amp9"), -1, VolPlayfieldRoll(RampBalls(x,0)) * RampRollVolume * VolumeDial, AudioPan(RampBalls(x,0)), 0, BallPitch(RampBalls(x,0)), 1, 0, AudioFade(RampBalls(x,0))
+'					StopSound("RampLoop" & x & "_amp9")
+'					PlaySound("wireloop" & x & "_amp9"), -1, VolPlayfieldRoll(RampBalls(x,0)) * RampRollVolume * VolumeDial, AudioPan(RampBalls(x,0)), 0, BallPitch(RampBalls(x,0)), 1, 0, AudioFade(RampBalls(x,0))
+					StopSound (Cartridge_Metal_Ramps & "_Ramp_Left_Plastic_BallRoll_" & x)
+					PlaySound (Cartridge_Metal_Ramps & "_Ramp_Left_Metal_Wire_BallRoll_" & x), 0, (VolPlasticMetalRampRoll(RampBalls(x,0))) * MetalWireRampRollSoundFactor * RampRollVolume * VolumeDial * 1.25, AudioPan(RampBalls(x,0)), 0, 0, 1, 0, AudioFade(RampBalls(x,0))
 '					debug.print "wireramp"
 				End If
 				RampBalls(x, 2)	= RampBalls(x, 2) + 1
 			Else
-				StopSound("RampLoop" & x & "_amp9")
-				StopSound("wireloop" & x & "_amp9")
+'				StopSound("RampLoop" & x & "_amp9")
+'				StopSound("wireloop" & x & "_amp9")
+				StopSound (Cartridge_Metal_Ramps & "_Ramp_Left_Metal_Wire_BallRoll_" & x)
+				StopSound (Cartridge_Metal_Ramps & "_Ramp_Left_Plastic_BallRoll_" & x)
 			end if
 			if RampBalls(x,0).Z < 30 and RampBalls(x, 2) > RampMinLoops then	'if ball is on the PF, remove  it
-				StopSound("RampLoop" & x & "_amp9")
-				StopSound("wireloop" & x & "_amp9")
+'				StopSound("RampLoop" & x & "_amp9")
+'				StopSound("wireloop" & x & "_amp9")
+				StopSound (Cartridge_Metal_Ramps & "_Ramp_Left_Metal_Wire_BallRoll_" & x)
+				StopSound (Cartridge_Metal_Ramps & "_Ramp_Left_Plastic_BallRoll_" & x)
 				Wremoveball RampBalls(x,1)
 			End If
 		Else
-			StopSound("RampLoop" & x & "_amp9")
-			StopSound("wireloop" & x & "_amp9")
+'			StopSound("RampLoop" & x & "_amp9")
+'			StopSound("wireloop" & x & "_amp9")
+			StopSound (Cartridge_Metal_Ramps & "_Ramp_Left_Metal_Wire_BallRoll_" & x)
+			StopSound (Cartridge_Metal_Ramps & "_Ramp_Left_Plastic_BallRoll_" & x)
 		end if
 	next
 	if not RampBalls(0,0) then RampRoll.enabled = 0
@@ -14613,13 +14618,16 @@ End Function
 '//  <TABLE MANUFACTURER ABBREVIATION>_<TABLE NAME ABBREVIATION>_<SOUNDSET REVISION NUMBER>
 '//  
 '//  General Mechanical Sounds Cartridges:
-Const Cartridge_Bumpers					= "SY_TNA_REV02" 'Spooky Total Nuclear Annihilation Cartridge REV02
+'Const Cartridge_Bumpers					= "SY_TNA_REV02" 'Spooky Total Nuclear Annihilation Cartridge REV02
+Const Cartridge_Bumpers					= "VPW_BM_REV01" 'TNA+BPT custom bumper mix Cartridge REV01
 Const Cartridge_Slingshots				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_Flippers				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_Kickers					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+Const Cartridge_Kickers2				= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
 Const Cartridge_Diverters				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_Knocker					= "WS_WHD_REV02" 'Williams Whirlwind Cartridge REV02
-Const Cartridge_Relays					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+'Const Cartridge_Relays					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+Const Cartridge_Relays					= "WS_WHD_REV01"
 Const Cartridge_Trough					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_Rollovers				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_Targets					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
@@ -14636,8 +14644,10 @@ Const Cartridge_Ball_Roll				= "BY_TOM_REV01" 'Bally Theatre of Magic Cartridge 
 'Const Cartridge_Ball_Roll				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_BallBallCollision		= "BY_WDT_REV01" 'Bally WHO Dunnit Cartridge REV01
 Const Cartridge_Ball_Drop_Bump			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Plastic_Ramps			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Metal_Ramps				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+'Const Cartridge_Plastic_Ramps			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+'Const Cartridge_Metal_Ramps				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+Const Cartridge_Plastic_Ramps			= "WS_WHD_REV01"
+Const Cartridge_Metal_Ramps				= "WS_WHD_REV01"
 Const Cartridge_Ball_Guides				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_Table_Specifics			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 
@@ -14709,6 +14719,12 @@ ShakerSoundLevel = 1													'volume level; range [0, 1]
 BeaconSoundLevel = 1													'volume level; range [0, 1]
 
 
+'// RAMPS:
+dim PlasticRampRollSoundFactor, MetalWireRampRollSoundFactor
+
+PlasticRampRollSoundFactor = 0.2
+MetalWireRampRollSoundFactor = 0.4
+
 '////////////////////////////  SWITCHES SOUNDS CONFIG  //////////////////////////
 Dim StandupTargetSoundFactor, SpinnerSpinSoundLevel, RolloverSoundLevel
 
@@ -14746,8 +14762,10 @@ Dim RollingSoundFactor, TroughDrainSoundLevel
 Dim BottomArchBallGuideSoundFactor, FlipperBallGuideSoundFactor 
 Dim MetalGuideHitSoundLevel, MetalShooterLaneSoundFactor, TroughToShooterLaneOnPlungerSoundLevel, WallImpactSoundFactor
 Dim MetalBallGuideOrbitEntranceSoundFactor, MetalBallGuideOrbitRollSoundFactor
+dim BlastSoundLevel
 
 RollingSoundFactor = 50													'volume multiplier
+BlastSoundLevel = 0.8
 TroughDrainSoundLevel = 0.8												'volume level; range [0, 1]
 BottomArchBallGuideSoundFactor = 0.2									'volume multiplier
 FlipperBallGuideSoundFactor = 0.015										'volume multiplier
@@ -14770,6 +14788,19 @@ PlungerPullSoundLevel = 1												'volume level; range [0, 1]
 NudgeLeftSoundLevel = 1													'volume level; range [0, 1]
 NudgeRightSoundLevel = 1												'volume level; range [0, 1]
 NudgeCenterSoundLevel = 1												'volume level; range [0, 1]
+
+
+'//  RELAYS:
+'//  Solenoid 16 = Lower Playfield Relay GI Relay (P/N 5580-12145-00) / Backbox GI Relay (P/N 5580-09555-01)
+'//  Solenoid 11 = Upper Playfield Relay GI Relay (P/N 5580-12145-00)
+'//  Solenoid 12 = Solenoid A/C Select Relay (5580-09555-01)
+'//  Fake Solenoid = Flahser Relay
+
+Dim RelayLowerGISoundLevel, RelayUpperGISoundLevel, RelaySolenoidACSelectSoundLevel, RelayFlasherSoundLevel
+RelayLowerGISoundLevel = 0.25
+RelayUpperGISoundLevel = 0.25
+RelaySolenoidACSelectSoundLevel = 0.3
+RelayFlasherSoundLevel = 0.005
 
 
 '////////////////////////////////  SOUND HELPERS  ///////////////////////////////
@@ -14928,6 +14959,24 @@ Function AudioFade(tableobj) ' Fades between front and back of the table (for su
 	End Select
 End Function
 
+
+Function AudioFadePosY(positiony) ' Fades between front and back of the table (for surround systems or 2x2 speakers, etc), depending on the Y position on the table. "table1" is the name of the table
+  Dim tmp
+    tmp = positiony * 2 / tableheight-1
+
+	if tmp > 7000 Then
+		tmp = 7000
+	elseif tmp < -7000 Then
+		tmp = -7000
+	end if
+
+    If tmp > 0 Then
+		AudioFadePosY = Csng(tmp ^10)
+    Else
+        AudioFadePosY = Csng(-((- tmp) ^10) )
+    End If
+End Function
+
 '//  Calculates the pan for a tableobj based on the X position on the table.
 Function AudioPan(tableobj)
     Dim tmp
@@ -14963,6 +15012,23 @@ Function AudioPan(tableobj)
 				AudioPan = Csng(-((- tmp) ^10) )
 			End If
 	End Select
+End Function
+
+Function AudioPanPosX(positionx) ' Calculates the pan for a tableobj based on the X position on the table. "table1" is the name of the table
+    Dim tmp
+    tmp = positionx * 2 / tablewidth-1
+
+	if tmp > 7000 Then
+		tmp = 7000
+	elseif tmp < -7000 Then
+		tmp = -7000
+	end if
+
+    If tmp > 0 Then
+        AudioPanPosX = Csng(tmp ^10)
+    Else
+        AudioPanPosX = Csng(-((- tmp) ^10) )
+    End If
 End Function
 
 '//  Calculates the volume of the sound based on the ball speed
@@ -15086,6 +15152,13 @@ Sub RandomSoundTroughKickoutDOF(TroughKickout, DOFevent, DOFstate)
 End Sub
 
 
+dim Solenoid_Kickback_SoundLevel : Solenoid_Kickback_SoundLevel = 1
+'///////////////////////////  LOCKING KICKER SOLENOID  //////////////////////////
+Sub RandomSoundLockingKickerSolenoid()
+	PlaySoundAtLevelStatic (Cartridge_Kickers2 & "_Locking_Kickback_" & Int(Rnd*4)+1), Solenoid_Kickback_SoundLevel, KickbackPosition
+End Sub
+
+
 '/////////////////////////  SLINGSHOT SOLENOID SOUNDS  //////////////////////////
 Sub RandomSoundSlingshotMainLeft(sling)
  	dim finalspeed
@@ -15143,15 +15216,36 @@ End Sub
 
 
 '///////////////////////////  BUMPER SOLENOID SOUNDS  ///////////////////////////
-Sub RandomSoundPopBumper(Bump)
+Sub RandomSoundJetBumperLeft(Bump)
 	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Pop_Bumper_" & Int(Rnd*7)+1,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Left_" & Int(Rnd*7)+1,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
 End Sub
 
-Sub RandomSoundPopBumperDOF(Bump, DOFevent, DOFstate)
+Sub RandomSoundJetBumperLeftDOF(Bump, DOFevent, DOFstate)
 	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Pop_Bumper_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Left_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
 End Sub
+
+Sub RandomSoundJetBumperLow(Bump)
+	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Low_" & Int(Rnd*7)+1,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+End Sub
+
+Sub RandomSoundJetBumperLowDOF(Bump, DOFevent, DOFstate)
+	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Low_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+End Sub
+
+Sub RandomSoundJetBumperUp(Bump)
+	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Up_" & Int(Rnd*7)+1,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+End Sub
+
+Sub RandomSoundJetBumperUpDOF(Bump, DOFevent, DOFstate)
+	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Up_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+End Sub
+
 
 
 '///////////////////////  FLIPPER BATS SOUND SUBROUTINES  ///////////////////////
@@ -15317,11 +15411,11 @@ Sub LeftFlipperCollide(parm)
 		End If
 	End If
 
-    CheckLiveCatch Activeball, LeftFlipper, LFCount, parm
+'    CheckLiveCatch Activeball, LeftFlipper, LFCount, parm
 	RandomSoundRubberFlipper(parm)
 End Sub
 
-Sub LeftFlipper1Collide(parm)	'Note: no live catch added here for upper flipper
+Sub LeftFlipper1_Collide(parm)	'Note: no live catch added here for upper flipper
 		If parm => 22 Then
 		' Strong hit safe values boundary
 		' Flipper stroke dampened
@@ -15336,6 +15430,42 @@ Sub LeftFlipper1Collide(parm)	'Note: no live catch added here for upper flipper
 			FlipperLeftUpperHitParm = FlipperUpSoundLevel * (1-(parm/25))
 		End If
 	End If
+	RandomSoundRubberFlipper(parm)
+End Sub
+
+Sub LeftFlipperMini_Collide(parm)	'Note: no live catch added here for upper flipper
+'		If parm => 22 Then
+'		' Strong hit safe values boundary
+'		' Flipper stroke dampened
+'		FlipperLeftUpperHitParm = FlipperUpSoundLevel * 0.1
+'	Else
+'		If parm =< 1 Then 
+'			' Weak hit safe values boundary
+'			' Flipper stroke full
+'			FlipperLeftUpperHitParm = FlipperUpSoundLevel
+'		Else
+'			' Fully modulated hit
+'			FlipperLeftUpperHitParm = FlipperUpSoundLevel * (1-(parm/25))
+'		End If
+'	End If
+	RandomSoundRubberFlipper(parm)
+End Sub
+
+Sub RightFlipperMini_Collide(parm)	'Note: no live catch added here for upper flipper
+'		If parm => 22 Then
+'		' Strong hit safe values boundary
+'		' Flipper stroke dampened
+'		FlipperLeftUpperHitParm = FlipperUpSoundLevel * 0.1
+'	Else
+'		If parm =< 1 Then 
+'			' Weak hit safe values boundary
+'			' Flipper stroke full
+'			FlipperLeftUpperHitParm = FlipperUpSoundLevel
+'		Else
+'			' Fully modulated hit
+'			FlipperLeftUpperHitParm = FlipperUpSoundLevel * (1-(parm/25))
+'		End If
+'	End If
 	RandomSoundRubberFlipper(parm)
 End Sub
 
@@ -15354,7 +15484,7 @@ Sub RightFlipperCollide(parm)
 			FlipperRightLowerHitParm = FlipperUpSoundLevel * (1-(parm/25))
 		End If
 	End If
-    CheckLiveCatch Activeball, RightFlipper, RFCount, parm
+'    CheckLiveCatch Activeball, RightFlipper, RFCount, parm
  	RandomSoundRubberFlipper(parm)
 End Sub
 
@@ -15495,11 +15625,11 @@ End Sub
 Sub DropTarget1_Reset_Coil()
 	If DTWasDropped(1) Then
 		'Drop Target is Down
-		debug.print "DropTarget1 Reset Coil (Target was down)"
+'		debug.print "DropTarget1 Reset Coil (Target was down)"
 		SoundDropTarget1_ResetCoil_When_Target_Down'_DOF 110, DOFPulse
 	Else
 		'Drop Target is Up
-		debug.print "DropTarget1 Reset Coil (Target was up)"
+'		debug.print "DropTarget1 Reset Coil (Target was up)"
 		SoundDropTarget1_ResetCoil_When_Target_Up '_DOF 110, DOFPulse
 	End If
 End Sub
@@ -15809,45 +15939,67 @@ End Sub
 
 
 '///////////////////////////////////  GATES  ////////////////////////////////////
-Sub GateL_Hit()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Through"), GateFlapSoundLevel, GateL
-End Sub
+'Sub GateL_Hit()
+'	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Through"), GateFlapSoundLevel, GateL
+'End Sub
 
 Sub GateLTrigger_Hit()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Closed_Hit_" & Int(Rnd*8)+1), GateHitSoundLevel, GateL
+	if activeball.velx > 0 Then
+'debug.print "passing left"
+		PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Through"), GateFlapSoundLevel, Gate004
+	else
+		if Gate004.collidable Then
+'debug.print "Left closed"
+			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Closed_Hit_" & Int(Rnd*8)+1), GateHitSoundLevel, Gate004
+		Else
+'debug.print "Left open"
+			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Through"), GateFlapSoundLevel, Gate004
+		end if
+	end if
 End Sub
 
 
 
 Sub GateL_OpenSound()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Energized_" & Int(Rnd*2)+1), GateFlapSoundLevel, GateL
+	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Energized_" & Int(Rnd*2)+1), GateFlapSoundLevel, Gate004
 	GateL_CoilHoldSound(SoundOn)
 End Sub
 
 Sub GateL_CloseSound()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Deenergized"), GateFlapSoundLevel, GateL
+	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Deenergized"), GateFlapSoundLevel, Gate004
 	GateL_CoilHoldSound(SoundOff)
 End Sub
 
 
 
-Sub GateR_Hit()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, GateR
-End Sub
+'Sub GateR_Hit()
+'	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, GateR
+'End Sub
 
 Sub GateRTrigger_Hit()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Closed_Hit_" & Int(Rnd*8)+1), GateHitSoundLevel, GateR
+	if activeball.velx < 0 Then
+'debug.print "passing right"
+		PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, Gate001
+	else
+		if Gate001.collidable Then
+'debug.print "Right closed"
+			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Closed_Hit_" & Int(Rnd*8)+1), GateHitSoundLevel, Gate001
+		Else
+'debug.print "Right open"
+			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, Gate001
+		end if
+	end if
 End Sub
 
 
 
 Sub GateR_OpenSound()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Energized_" & Int(Rnd*2)+1), GateFlapSoundLevel, GateR
+	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Energized_" & Int(Rnd*2)+1), GateFlapSoundLevel, Gate001
 	GateR_CoilHoldSound(SoundOn)
 End Sub
 
 Sub GateR_CloseSound()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Deenergized"), GateFlapSoundLevel, GateR
+	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Deenergized"), GateFlapSoundLevel, Gate001
 	GateR_CoilHoldSound(SoundOff)
 End Sub
 
@@ -15856,7 +16008,7 @@ End Sub
 Sub GateR_CoilHoldSound(toggle)
 	Select Case toggle
 		Case SoundOn
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Gates & "_Gate_Right_Hold_Loop"), GateCoilHoldSoundLevel, GateR
+			PlaySoundAtLevelExistingStaticLoop (Cartridge_Gates & "_Gate_Right_Hold_Loop"), GateCoilHoldSoundLevel, Gate001
 		Case SoundOff
 			StopSound Cartridge_Gates & "_Gate_Right_Hold_Loop"
 	End Select
@@ -15865,33 +16017,33 @@ End Sub
 Sub GateL_CoilHoldSound(toggle)
 	Select Case toggle
 		Case SoundOn
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Gates & "_Gate_Left_Hold_Loop"), GateCoilHoldSoundLevel, GateL
+			PlaySoundAtLevelExistingStaticLoop (Cartridge_Gates & "_Gate_Left_Hold_Loop"), GateCoilHoldSoundLevel, Gate004
 		Case SoundOff
 			StopSound Cartridge_Gates & "_Gate_Left_Hold_Loop"
 	End Select
 End Sub
 
 
-
-Sub GateL_OpenSoundDOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Left_Energized_" & Int(Rnd*2)+1, DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateL
-	GateL_CoilHoldSound(SoundOn)
-End Sub
-
-Sub GateL_CloseSoundDOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Left_Deenergized", DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateL
-	GateL_CoilHoldSound(SoundOff)
-End Sub
-
-Sub GateR_OpenSoundDOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Right_Energized_" & Int(Rnd*2)+1, DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateR
-	GateR_CoilHoldSound(SoundOn)
-End Sub
-
-Sub GateR_CloseSoundDOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Right_Deenergized", DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateR
-	GateR_CoilHoldSound(SoundOff)
-End Sub
+'
+'Sub GateL_OpenSoundDOF(DOFevent, DOFstate)
+'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Left_Energized_" & Int(Rnd*2)+1, DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateL
+'	GateL_CoilHoldSound(SoundOn)
+'End Sub
+'
+'Sub GateL_CloseSoundDOF(DOFevent, DOFstate)
+'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Left_Deenergized", DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateL
+'	GateL_CoilHoldSound(SoundOff)
+'End Sub
+'
+'Sub GateR_OpenSoundDOF(DOFevent, DOFstate)
+'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Right_Energized_" & Int(Rnd*2)+1, DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateR
+'	GateR_CoilHoldSound(SoundOn)
+'End Sub
+'
+'Sub GateR_CloseSoundDOF(DOFevent, DOFstate)
+'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Right_Deenergized", DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateR
+'	GateR_CoilHoldSound(SoundOff)
+'End Sub
 
 
 '//////////////////////////////////  SHAKER  ////////////////////////////////////
@@ -16049,6 +16201,55 @@ End Sub
 
 Sub RandomSoundLanes()
 	PlaySoundAtLevelActiveBall (Cartridge_Rollovers & "_Rollover_Lane_Wall_" & Int(Rnd*2)+1), RolloverSoundLevel
+End Sub
+
+'//////////////////////////  SOLENOID A/C SELECT RELAY  /////////////////////////
+'Sub Sound_Solenoid_AC(toggle)
+'	Select Case toggle
+'		Case CircuitA
+'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_AC_Select_Relay_Side_A"), RelaySolenoidACSelectSoundLevel, GIUpperPosition
+'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_AC_Select_Relay_Side_A"), RelaySolenoidACSelectSoundLevel, ACSelectPosition
+'		Case CircuitC
+'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_AC_Select_Relay_Side_C"), RelaySolenoidACSelectSoundLevel, GIUpperPosition
+'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_AC_Select_Relay_Side_C"), RelaySolenoidACSelectSoundLevel, ACSelectPosition
+'	End Select
+'End Sub
+
+
+''//////////////////////////  GENERAL ILLUMINATION RELAYS  ///////////////////////
+'Sub Sound_LowerGI_Relay(toggle)
+'	Select Case toggle
+'		Case SoundOn
+'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Lower_Playfield_and_Backbox_GI_Relay_On"), RelayLowerGISoundLevel, GIUpperPosition
+'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Lower_Playfield_and_Backbox_GI_Relay_On"), RelayLowerGISoundLevel, GIUpperPosition
+'		Case SoundOff
+'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Lower_Playfield_and_Backbox_GI_Relay_Off"), RelayLowerGISoundLevel, GIUpperPosition
+'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Lower_Playfield_and_Backbox_GI_Relay_Off"), RelayLowerGISoundLevel, GIUpperPosition
+'	End Select
+'End Sub
+
+Sub Sound_GI_Relay(toggle)
+	Select Case toggle
+		Case SoundOn
+			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Upper_Playfield_GI_Relay_On"), RelayUpperGISoundLevel, GIUpperPosition
+			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Upper_Playfield_GI_Relay_On"), RelayUpperGISoundLevel, GILowerPosition
+		Case SoundOff
+			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Upper_Playfield_GI_Relay_Off"), RelayUpperGISoundLevel, GIUpperPosition
+			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Upper_Playfield_GI_Relay_Off"), RelayUpperGISoundLevel, GILowerPosition
+	End Select
+End Sub
+
+
+'///////////////////////////////  FLASHERS RELAY  ///////////////////////////////
+Sub Sound_Flasher_Relay(toggle, tableobj)
+	Select Case toggle
+		Case SoundOn
+			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Flashers_Relay_On"), RelayFlasherSoundLevel, GIUpperPosition
+			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Flashers_Relay_On"), RelayFlasherSoundLevel, tableobj
+		Case SoundOff
+			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Flashers_Relay_Off"), RelayFlasherSoundLevel, GIUpperPosition
+			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Flashers_Relay_Off"), RelayFlasherSoundLevel, tableobj
+	End Select
 End Sub
 
 
@@ -16270,25 +16471,25 @@ End Sub
 
 '///////////////////////  METAL BALL GUIDE COLLECTIONS  /////////////////////////
 Sub Metal_Wire_Ball_Guides_Hit(idx)
-	debug.print "Metal_Wire_Ball_Guides_Hit"
+'debug.print "Metal_Wire_Ball_Guides_Hit"
 	MetalWireBallGuideHit()
 End Sub
 
 'Sub Metal_Ball_Guides_Hit(idx)
 Sub Metals_Hit(idx)
-	debug.print "Metal_Ball_Guides_Hit"
+'debug.print "Metal_Ball_Guides_Hit"
 	Set ballVariableForMetalBallGuideTop = ActiveBall
  	dim finalspeed
   	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
 	If thisBallOverRollovers(ballVariableForMetalBallGuideTop) Then
 		If finalspeed <= 6 then	
 			'If active ball touches top metal ball guide
-			debug.print "--> Top touch"
+'debug.print "--> Top touch"
 			MetalGuideTopHit()
 		End If
 	Else
 		If finalspeed <= 10 then	
-			debug.print "--> side touch"
+'debug.print "--> side touch"
 			MetalGuideSideHit()
 		End If
 	End If
@@ -16308,7 +16509,7 @@ End Sub
 Sub MetalRollStopSlowBall_Hit()
 	If StopMetalRollWhenBallRollsSlowFromShooter = 2 AND ActiveBall.vely > 0 Then
 		'Ball rolls downwards to rollovers area
-		debug.print "Ball rolls downwards to rollovers area"
+'debug.print "Ball rolls downwards to rollovers area"
 		StopAnyMetalBallGuideOrbitRoll()
 	End If
 	StopMetalRollWhenBallRollsSlowFromShooter = 0
@@ -16318,19 +16519,20 @@ End Sub
 
 '/////////////////////////////  METAL SHOOTER LANE  /////////////////////////////
 Sub MetalLaneTrigger_Hit()
-	debug.print "MetalLaneTrigger_Hit"
+'debug.print "MetalLaneTrigger_Hit"
 	'Ball rolls up entering the metal lane
 	Set ballVariableMetalShooterLane = ActiveBall	
 	Call SoundMetalLane(SoundOn, ballVariableMetalShooterLane)
 End Sub
 
-Sub MetalLaneTrigger_UnHit()
-	debug.print "MetalLaneTrigger_UnHit"
+Sub MetalLaneTrigger_unhit()
+'debug.print "MetalLaneTrigger_UnHit"
 	'Ball exiting the metal lane - upwards or downwards
 	Call SoundMetalLane(SoundOff, ballVariableMetalShooterLane)
 	PlaySoundAtLevelActiveBall (Cartridge_Table_Specifics & "_Shooter_Lane_Metal_BallStop"), Vol(ActiveBall) * MetalShooterLaneSoundFactor
 	If Activeball.vely < 0 Then
 		'Ball rolls upwards
+'debug.print "ball rolls upwards"
 		OrbitRight_EnterFromShooterLane = 1
 	End If
 End Sub
@@ -16365,7 +16567,7 @@ End Sub
 
 '///////////////////////////  BOTTOM ARCH BALL GUIDE  ///////////////////////////
 '//////////////////////  BOTTOM ARCH BALL GUIDE - BOUNCES  //////////////////////
-Sub Apron_Hit (idx)
+Sub Apronwall_Hit (idx)
 	RandomSoundBottomArchBallGuide
 End Sub
 
@@ -16397,11 +16599,11 @@ End Sub
 
 
 '/////////////////////////////  FLIPPER BALL GUIDE  /////////////////////////////
-Sub Wall019_Hit
+Sub Wall17_Hit
 	RandomSoundFlipperBallGuide
 End Sub
 
-Sub Wall020_Hit
+Sub Wall22_Hit
 	RandomSoundFlipperBallGuide
 End Sub
 
@@ -16585,6 +16787,7 @@ End Sub
 Sub BallGuideOrbitLeft_Entrance_UnHit()
 	If Activeball.vely < 0 Then
 		'Ball rolls upwards
+debug.print "Ball rolls upwards"
 		dim finalspeed
 		finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
 		'debug.print "BallGuideOrbitLeft_Entrance_UnHit - finalspeed: " & finalspeed
@@ -16597,6 +16800,7 @@ Sub BallGuideOrbitLeft_Entrance_UnHit()
 	End If
 	If Activeball.vely > 0 Then
 		'Ball rolls downwards
+debug.print "Ball rolls downwards"
 		StopAnyMetalBallGuideOrbitRoll()
 	End If
 End Sub
@@ -16633,17 +16837,20 @@ End Sub
 Sub BallGuideOrbitRight_Entrance_UnHit()
 	If Activeball.vely < 0 Then
 		'Ball rolls upwards
+'debug.print "right orb entrance Ball rolls upwards"
 		If OrbitRight_EnterFromPlayfieldRightEntrance AND NOT OrbitRight_EnterFromShooterLane Then
 			dim finalspeed
 			finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
 			If finalspeed >= 8 Then
 				PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Slow_Up"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
 			End If
+'debug.print "--> not from shooterlane"
 			OrbitRight_EnterFromPlayfieldRightEntrance = 0
 		End If
 	End If
 	If Activeball.vely > 0 Then
 		'Ball rolls downwards
+'debug.print "right orb entrance Ball rolls downwards"
 		StopAnyMetalBallGuideOrbitRoll()
 		OrbitRight_EnterFromShooterLane = 0
 	End If
@@ -16655,6 +16862,7 @@ Sub BallGuideOrbitRight_Roll_Up()
 	If OrbitRight_EnterFromShooterLane AND NOT OrbitRight_EnterFromPlayfieldRightEntrance Then
 		If Activeball.vely < 0 Then
 			'Ball rolls upwards
+'debug.print "right orb Ball rolls upwards"
 			PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Fast_Up"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
 			OrbitRight_EnterFromShooterLane = 0
 		End If
@@ -16666,6 +16874,7 @@ Sub BallGuideOrbitRight_Roll_Down()
 	If NOT OrbitRight_EnterFromShooterLane AND NOT OrbitRight_EnterFromPlayfieldRightEntrance Then
 		If Activeball.vely > 0 Then
 			'Ball rolls downwards
+'debug.print "right orb Ball rolls downwards"
 			PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Fast_Down"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
 		End If
 	End If
@@ -16673,8 +16882,10 @@ End Sub
 
 Sub BallGuideOrbitLeft_Roll_Down()
 	If NOT OrbitLeft_EnterFromPlayfieldRightEntrance Then
-		If Activeball.vely > 0 Then
+'		If Activeball.vely > 0 Then
+		If Activeball.velx < 0 Then
 			'Ball rolls downwards
+'debug.print "left orb rolls downwards"
 			PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Left_Fast_Down"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
 		End If
 	End If
@@ -16752,6 +16963,10 @@ Const PositionalSoundPlaybackConfiguration = 3
 '//  Any values different than the default will impact the volume level and the dynamic voume changes profile.
 Const PlayfieldRollVolumeDial = 1.0
 '
+'//  RelaysPosition:
+'//  1 = Relays positioned with power board (Provides sound spread from the left and right back channels)
+'//  2 = Relays positioned with GI strings (Provides sound spread from left/right/front/rear surround channels)
+Const RelaysPosition = 1
 '
 '//  ShakerMotor:
 '//  This setting will determine how will the shaker motor to be used during game play. Options:
@@ -18341,8 +18556,8 @@ Sub FlashFlasher(nr)
 	End If
 End Sub
 
-sub Sound_Flasher_Relay(aaa,vvv)
-end sub
+'sub Sound_Flasher_Relay(aaa,vvv)
+'end sub
 
 Sub FlasherFlash1_Timer() : FlashFlasher(1) : End Sub 
 Sub FlasherFlash2_Timer() : FlashFlasher(2) : End Sub 
@@ -19204,7 +19419,8 @@ sub gion
 	if WizardPhase <> 1 then 
 		cGI.state = 1
 		UndercabGIOn
-		PlaySoundAt "Relay_On",LightRelayPosition
+'		PlaySoundAt "Relay_On",LightRelayPosition
+		Sound_GI_Relay(SoundOn)
 		If B2son then Controller.B2SSetData 8, 1 'Backglass logo ON
 	end if
 
@@ -19224,7 +19440,8 @@ sub gioff
 '	Plastics.blenddisablelighting = 0
 	cGI.state = 0
 	UndercabGIOff
-	PlaySoundAt "Relay_Off",LightRelayPosition
+'	PlaySoundAt "Relay_Off",LightRelayPosition
+	Sound_GI_Relay(SoundOff)
 	if GI_sounds then PlaySound "EFX_GIOFF" & RndInt(1,4),0,CalloutVol,0,0,1,1,1
 	If B2son then Controller.B2SSetData 8, 0 'Backglass logo OFF
 	startB2S 1
@@ -19644,7 +19861,7 @@ Sub DMD_EOB_Bonus
 	if HasPuP then
 		Select Case EobBonusCounter
 			Case    2 : StopVideosPlaying
-						SkipEnd = True
+'						SkipEnd = True
 						DMD_ShowImages "attract",1,500,-1,0
 						TOTALEOBBONUS = 0
 						TOTALEOBBONUS = TOTALEOBBONUS + (CurrentMissionCount * bonus_EOB_Missions )
@@ -19784,7 +20001,7 @@ Sub DMD_EOB_Bonus
 						puPlayer.LabelSet pDMD,"Multi", "10X",1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
 						End If
 			Case  830 : pDMDSetPage(pDMDBlank)
-						SkipEnd = False
+'						SkipEnd = False
 			Case  840: Score(currentplayer) = Score(currentplayer) + ( TOTALEOBBONUS * BonusMultiplier(CurrentPlayer) )
 						DMD_ShowText "TOTAL SCORE" ,1,FontWhite3,11,False,40,3000
 						PuPEvent(546)
