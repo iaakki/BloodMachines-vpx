@@ -4996,6 +4996,7 @@ Sub ScavengeKicker_Hit
 		If cLightMystery1.state = 2 Then
 			AudioCallout "mystery"
 			PuPEvent(565)
+			DOF 565, DOFPulse
 			WriteToLog "ScavangeKicker","All Targets Pop Up"
 
 			DTRaise 1
@@ -5009,6 +5010,7 @@ Sub ScavengeKicker_Hit
 		Elseif cLightMystery2.state = 2 Then
 			AudioCallout "double scoring"
 			PuPEvent(567)
+			DOF 567, DOFPulse
 			cLightMystery2.blinkinterval = 60
 			StartDoubleScoring
 			ScavengeKicker.timerenabled = true
@@ -5017,6 +5019,7 @@ Sub ScavengeKicker_Hit
 		Elseif cLightMystery3.state = 2 Then
 			AudioCallout "super spinners"
 			PuPEvent(566)
+			DOF 566, DOFPulse
 			cLightMystery3.blinkinterval = 60
 			StartSuperSpinners
 			ScavengeKicker.timerenabled = true
@@ -5140,23 +5143,32 @@ Sub RewardMystery
 	Select Case DMDMysteryReward   ' Fixing  EB special Litelock ?
 		Case 1 : Addscore 10000000
 		PuPEvent(570)
+		DOF 570, DOFPulse
 		Case 2 : Addscore  8000000
 		PuPEvent(569)
+		DOF 569, DOFPulse
 		Case 3 : Addscore  5000000
 		PuPEvent(568)
+		DOF 568, DOFPulse
 		Case 4 : Addscore 15000000
 		PuPEvent(571)
+		DOF 571, DOFPulse
 		Case 5 : Addscore 17000000
 		PuPEvent(572)
+		DOF 572, DOFPulse
 		Case 6 : Addscore 20000000
 		PuPEvent(573)
+		DOF 573, DOFPulse
 		Case 7 : Addscore 20000000
 		PuPEvent(573)
+		DOF 573, DOFPulse
 		Case 8 : Addscore 20000000
 		PuPEvent(573)
+		DOF 573, DOFPulse
 		Case 9: cLightCollectExtraBall.state=2	 ' EB
 				AudioCallout "extra ball lit"
 				PuPEvent(574)
+				DOF 574, DOFPulse
 				' fixing sound blinks ..
 
 	End Select
@@ -5395,6 +5407,7 @@ end sub
 Sub VUK2_Hit()
 	dim KickDelay
 	PuPEvent(583)
+	DOF 583, DOFPulse
 	KickDelay = 200
 	WriteToLog "VKU2_Hit", "skillshot " & Skillshot
 	RandomSoundScoopRightEnter VUK2
@@ -5432,6 +5445,7 @@ Sub VUK2_Hit()
         LS_Flash4.StopPlay
         PlaySound "EFX_landing",0,CalloutVol,0,0,1,1,1
 		PuPEvent(585)
+		DOF 585, DOFPulse
         VUK2.uservalue = 113						'~4s
         'vpmTimer.Addtimer KickDelay,"StartMBs '"
     Else
@@ -5869,6 +5883,7 @@ Sub swLoopUpTrigger_Hit
 		end if
 		swLoopUpTriggerCounter = swLoopUpTriggerCounter + 1
 		PuPEvent(579)
+		DOF 579, DOFPulse
 		if WizardPhase = 1 Then swLoopUpTriggerCounter = 4				'let it do only one speedup
 	end if
 
@@ -6271,6 +6286,7 @@ sub swSkyRamp_hit
 	WriteToLog "swSkyRamp_hit", ""
 	DOF 139,2 'sky ramp
 	PuPEvent(577)
+	DOF 577, DOFPulse
 	AddCoreyLight
 	AddScore score_SkyLoop
 	CheckCemeteryShot 6
@@ -6306,6 +6322,7 @@ Sub swMainRamp_hit
 	If not SwitchRecentlyHit("swSkyRamp") Then
 		DOF 138,2 'main ramp
 		PuPEvent(576)
+		DOF 576, DOFPulse
 		CheckBladerunnerShot 4
 		CheckChaseShot 4
 		CheckCemeteryShot 4
@@ -6650,12 +6667,14 @@ Sub MimaLock_Hit
 		cMimalock1.state=1
 		playsound "SPC_locked_ball_1",0,CalloutVol,0,0,1,1,1
 		PuPEvent(547)
+		DOF 547, DOFPulse
 	End If
 
 	If NumLocksMima = 2 Then
 		cMimalock2.state=1
 		playsound "SPC_locked_ball_2",0,CalloutVol,0,0,1,1,1
 		PuPEvent(548)
+		DOF 548, DOFPulse
 	End If
 
 	if NumLocksMima >= 3 then
@@ -6663,6 +6682,7 @@ Sub MimaLock_Hit
 		cMimalock1.state=1
 		cMimalock2.state=1
 		PuPEvent(549)
+		DOF 549, DOFPulse
 	
 		'Mima MB Ready
 		if cLightMimaMB.state=0 then AddMultiball 1
@@ -6702,6 +6722,7 @@ Sub StartMimaMB
 		bAutoPlunger = True
 		AddScore score_StartMimaMB
 		PuPEvent(550)
+		DOF 550, DOFPulse
 		MBPUP = "3"
 		MimaMBloop
 		bMimaMBOngoing = True
@@ -6745,6 +6766,7 @@ Sub CheckMimaMBJackpot
 			DOF 140,2 'jackpot
 			AudioCallout "jackpot"
 			PuPEvent(557)
+			DOF 557, DOFPulse
 			LS_AllLightsAndFlashers.Play SeqCircleOutOn,10
 			AddScore Jackpot
 
@@ -6774,6 +6796,7 @@ Sub CheckMimaMBSuperJackpot
 		showMissionVideo = 72	'-> 50
 		AudioCallout "super jackpot"
 		PuPEvent(561)
+		DOF 561, DOFPulse
 		LS_AllLightsAndFlashers.Play SeqDownOn, 10, 1
 		AddScore SuperJackpot
 		AddBonus bonus_MimaMBSuperJackpot
@@ -6859,6 +6882,7 @@ Sub CheckCoreyMB
 		SetMBReady
 		if cLightCoreyMB.state = 0 then AudioCallout "corey ready"
 		PuPEvent(551)
+		DOF 551, DOFPulse
 		showMissionVideo = 31
 	End If
 End Sub
@@ -6870,6 +6894,7 @@ Sub StartCoreyMB
 		'Start Corey MB
 		WriteToLog "Corey MB", "START"
 		PuPEvent(552)
+		DOF 552, DOFPulse
 		showMissionVideo = 45
 		bMultiBallMode = True
 		bCoreyMBOngoing = True
@@ -6909,6 +6934,7 @@ Sub CheckCoreyMBJackpot
 		AudioCallout "jackpot"
 		DOF 140,2 'jackpot
 		PuPEvent(558)
+		DOF 558, DOFPulse
 		LS_AllLightsAndFlashers.Play SeqCircleOutOn,10
 		AddScore Jackpot
 		DMD_ShowImages "jackpot",3,50,2000,0 ' jp fast blink
@@ -6927,6 +6953,7 @@ Sub CheckCoreyMBSuperJackpot
 		DOF 141,2 'super jackpot
 		AudioCallout "super jackpot"
 		PuPEvent(562)
+		DOF 562, DOFPulse
 		showMissionVideo = 41 '-> video nro 18
 		LS_AllLightsAndFlashers.Play SeqDownOn, 10, 1
 		AddScore SuperJackpot
@@ -7021,6 +7048,7 @@ Sub CheckTracyMB
 		SetMBReady
 		showMissionVideo = 46
 		PuPEvent(553)
+		DOF 553, DOFPulse
 		if cLightTracyMB.state = 0 then AudioCallout "tracy ready"
 	End If
 End Sub
@@ -7033,6 +7061,7 @@ Sub StartTracyMB
 		'Start Tracy MB
 		WriteToLog "Tracy MB", "START"
 		PuPEvent(554)
+		DOF 554, DOFPulse
 		MBPUP = "1"
 		TracyMBloop
 		showMissionVideo = 47
@@ -7068,6 +7097,7 @@ Sub CheckTracyMBJackpot
 		DOF 140,2 'jackpot
 		AudioCallout "jackpot"
 		PuPEvent(559)
+		DOF 559, DOFPulse
 		LS_AllLightsAndFlashers.Play SeqCircleOutOn,10
 		AddScore Jackpot
 
@@ -7099,6 +7129,7 @@ Sub CheckTracyMBSuperJackpot
 		DOF 141,2 'super jackpot
 		AudioCallout "super jackpot"
 		PuPEvent(563)
+		DOF 563, DOFPulse
 		showMissionVideo = 48	'-> 79
 		LS_AllLightsAndFlashers.Play SeqDownOn, 10, 1
 		AddScore SuperJackpot
@@ -7290,6 +7321,7 @@ Sub CheckWizardOrbShot
 		DOF 142,2 'MB wizard orb shot
 		AddScore score_WizardOrbShot
 		PuPEvent(560)
+		DOF 560, DOFPulse
 
 		'DMD_ShowImages "jackpot",3,50,2000,0 ' jp fast blink
 
@@ -8391,6 +8423,7 @@ Sub StartMission1
 	AudioCallout "start mission 1"
 	PuPEvent(513)
 	PuPEvent(524)
+	DOF 513, DOFPulse
 	ModeTextDelay1.Enabled=True
 
 End Sub
@@ -8498,6 +8531,7 @@ Sub CheckBladerunnerShot(nr)
 			'todo add score + dmd thing
 			fontblink2=55
 			PuPEvent(877)
+			DOF 877, DOFPulse
 			GS.Enabled=True
 			AddScore GunTargetScorePerPlayer
 			ShowAddScoreText = FormatScore(GunTargetScorePerPlayer)
@@ -8584,6 +8618,7 @@ Sub StartMission2
 	AudioCallout "start mission 2"
 	PuPEvent(512)
 	PuPEvent(523)
+	DOF 512, DOFPulse
 	ModeTextDelay2.Enabled=True
 
 End Sub
@@ -8689,6 +8724,7 @@ Sub StartMission3
 	PlaySong 7
 	PuPEvent(509)
 	PuPEvent(520)
+	DOF 509, DOFPulse
 	ModeTextDelay3.Enabled=True
 
 End Sub
@@ -8846,6 +8882,7 @@ Sub StartMission4
 	PlaySong 13
 	PuPEvent(508)
 	PuPEvent(519)
+	DOF 508, DOFPulse
 	ModeTextDelay4.Enabled=True
 End Sub
 
@@ -8998,6 +9035,7 @@ Sub StartMission5
 	hexfloor.blenddisablelighting = 10
 	PuPEvent(511)
 	PuPEvent(522)
+	DOF 511, DOFPulse
 End Sub
 
 TargetVascan1.IsDropped = true
@@ -9199,6 +9237,7 @@ Sub StartMission6
 	PlaySong 8
 	PuPEvent(510)
 	PuPEvent(521)
+	DOF 510, DOFPulse
 	ModeTextDelay6.Enabled=True
 End Sub
 
@@ -9347,6 +9386,7 @@ Sub StartMission7
 	PlaySongLoop 12, 351.6, 402
 	PuPEvent(507)
 	PuPEvent(584)
+	DOF 507, DOFPulse
 End Sub
 
 
@@ -9444,12 +9484,14 @@ Sub EndMission7
 		WriteToLog "Mission 7", "Completed"
 		vpmtimer.addtimer 555, "StopVideosPlaying : showMissionVideo=29 '"
 		PuPEvent(526)
+		DOF 526, DOFPulse
 	Else
 		cLightMission7.state=2
 		WriteToLog "Mission 7", "Not Completed"
 		StopVideosPlaying
 		showMissionVideo=30
 		PuPEvent(525)
+		DOF 525, DOFPulse
 	End If
 End Sub
 
@@ -9701,6 +9743,7 @@ Sub ShootGun(Enabled)
 			If CurrentMission=1 Then showMissionVideo=4					  
 			PlaySoundAt SoundFX("LaserBlast1", DOFContactors), sw45
 			PuPEvent(582)
+			DOF 582, DOFPulse
 			BlastBall.Interval = 30 : BlastBall_Timer()
 
 			PulseLaser true
@@ -10462,6 +10505,7 @@ Sub CheckTilt                                    'Called when table is nudged
 			TiltWarningTimer.enabled = True
 			AudioCallout "tilt warning"
 		PuPEvent(514)
+		DOF 514, DOFPulse
 		End if
 		If Tilt> 15 Then 'If more that 15 then TILT the table
 			Tilted = True
@@ -10475,6 +10519,7 @@ Sub CheckTilt                                    'Called when table is nudged
 			bumper3.threshold = 666
 			AudioCallout "tilt"
 		PuPEvent(515)
+		DOF 515, DOFPulse
 		End If
 	end if
 End Sub
@@ -10732,6 +10777,7 @@ Sub AwardSkillshot
 	CompletedSkillshots(CurrentPlayer)=CompletedSkillshots(CurrentPlayer)+1
 	AudioCallout "skillshot"
 	PuPEvent(505)
+	DOF 505, DOFPulse
 
 	Select Case CompletedSkillshots(CurrentPlayer)
 		case 1 :
@@ -10964,6 +11010,7 @@ Sub CheckEOBmulti
 					End If
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(532)
+					DOF 532, DOFPulse
 					End If
 				case 3 : AudioCallout "3x bonus":EOBGaugeTargetAngle = -40
 					showMissionVideo=52
@@ -10972,6 +11019,7 @@ Sub CheckEOBmulti
 					End If
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(533)
+					DOF 533, DOFPulse
 					End If
 				case 4 : AudioCallout "4x bonus":EOBGaugeTargetAngle = -72
 					showMissionVideo=53
@@ -10980,6 +11028,7 @@ Sub CheckEOBmulti
 					End If	
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(534)
+					DOF 534, DOFPulse
 					End If
 				case 5 : AudioCallout "5x bonus":EOBGaugeTargetAngle = -105
 					showMissionVideo=54
@@ -10988,6 +11037,7 @@ Sub CheckEOBmulti
 					End If	
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(535)
+					DOF 535, DOFPulse
 					End If
 				case 6 : AudioCallout "6x bonus":EOBGaugeTargetAngle = -135
 					showMissionVideo=55
@@ -10996,6 +11046,7 @@ Sub CheckEOBmulti
 					End If	
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(536)
+					DOF 536, DOFPulse
 					End If
 				case 7 : AudioCallout "7x bonus":EOBGaugeTargetAngle = -167
 					showMissionVideo=56
@@ -11004,6 +11055,7 @@ Sub CheckEOBmulti
 					End If	
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(537)
+					DOF 537, DOFPulse
 					End If
 				case 8 : AudioCallout "8x bonus":EOBGaugeTargetAngle = -199
 					showMissionVideo=57
@@ -11012,13 +11064,15 @@ Sub CheckEOBmulti
 					End If	
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(538)
+					DOF 538, DOFPulse
 					End If
 				case 9 : AudioCallout "9x bonus":EOBGaugeTargetAngle = -230
 					If Mission6BumperTimer.Enabled = True Then
-					PuPEvent(637)
+					PuPEvent(637)	
 					End If	
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(539)
+					DOF 539, DOFPulse
 					End If
 				case 10 : AudioCallout "10x bonus":EOBGaugeTargetAngle = -260
 					If Mission6BumperTimer.Enabled = True Then
@@ -11026,6 +11080,7 @@ Sub CheckEOBmulti
 					End If	
 					If Mission6BumperTimer.Enabled = False Then
 					PuPEvent(540)
+					DOF 540,DOFPulse
 					End If
 			end select
 
@@ -12061,6 +12116,8 @@ Sub AwardExtraBall
 		'DMDExtraBall=1
 		DMD_ShowImages "extraball",2,50,2000,0 ' eb fast blink
 		DOF 132,2 'award extra ball
+		DOF 504, DOFPulse
+		PuPevent (504)
 		ExtraBallsAwards(CurrentPlayer) = ExtraBallsAwards(CurrentPlayer) + 1
 	End If 
 End Sub
@@ -12276,6 +12333,7 @@ Sub EndOfBallComplete()
 	End If
 	If((BallsRemaining(CurrentPlayer) <= 0) AND(BallsRemaining(NextPlayer) <= 0) ) Then
 		PuPEvent(503)
+		Dof 503, DOFPulse
 		EndOfGame()	
 	Else
 		PlayerLights_SaveLights
@@ -12639,12 +12697,16 @@ Sub MimaTargetWasHit
 			select case PointMultiplier
 				Case 1 : PointMultiplier = 2 : cpMimaTarget.blinkinterval=250 : AudioCallout "double scoring" 	    : PFMultiplierCounter = 30 : DMD_ShowText "2X FOR 30 SECONDS",4,FontScoreInactiv2,28,True,40,3000
 				PuPEvent(580)
+				DOF 580, DOFPulse
 				Case 2 : PointMultiplier = 3 : cpMimaTarget.blinkinterval=150 : AudioCallout "3x bonus" 			: PFMultiplierCounter = 30 : DMD_ShowText "3X FOR 30 SECONDS",4,FontScoreInactiv2,28,True,40,3000
 				PuPEvent(533)
+				DOF 533, DOFPulse
 				Case 3 : PointMultiplier = 4 : cpMimaTarget.blinkinterval=100  : AudioCallout "4x bonus" 			: PFMultiplierCounter = 30 : DMD_ShowText "4X FOR 30 SECONDS",4,FontScoreInactiv2,28,True,40,3000
 				PuPEvent(534)
+				DOF 534, DOFPulse
 				Case 4 : PointMultiplier = 5 : cpMimaTarget.blinkinterval=50  : AudioCallout "5x bonus" 			: PFMultiplierCounter = 30 : DMD_ShowText "5X FOR 30 SECONDS",4,FontScoreInactiv2,28,True,40,3000
 				PuPEvent(535)
+				DOF 535, DOFPulse
 			end select
 			WriteToLog "PF Multiplier","Level=" & PointMultiplier
 			solBloodTrail true
@@ -13109,7 +13171,8 @@ Sub swLeftOutlane_unhit
 	If Tilted Then Exit Sub
 	If cLightKB2.state=1 Then
 		DOF 111,2
-PuPEvent(575)
+		DOF 575, DOFPulse
+		PuPEvent(575)
 		WriteToLog "plungerKB","AutoFire"
 		LS_Flipperlanes.Play SeqBlinking,,5,13
 		swLeftOutLane.enabled=False
@@ -13188,16 +13251,19 @@ Sub CheckLiteKB
 			cLightKB2.state=1
 			AddScore score_LagoCompleted
 			PuPEvent(587)
+			DOF 587, DOFPulse
 			DMD_ShowText "LAGO collected " & score_LagoCompleted,4,FontScoreInactiv2,30,True,40,3000
 		Elseif cLightKB1.state=0 Then
 			cLightKB1.state=1
 			AddScore score_LagoCompleted
 			PuPEvent(587)
+			DOF 587, DOFPulse
 			DMD_ShowText "LAGO collected " & score_LagoCompleted,4,FontScoreInactiv2,30,True,40,3000
 		Else
 			AddScore score_KBMaxed  'extra points instead of 3rd stacked KB
 			AudioCallout "LAGO miracle"
 			PuPEvent(588)
+			DOF 588, DOFPulse
 			DMD_ShowText "LAGO collected " & score_KBMaxed,4,FontScoreInactiv2,30,True,30,3000
 		End If
 	End If
@@ -19868,6 +19934,7 @@ Sub DMD_EOB_Bonus
 						TOTALEOBBONUSvisible = 0
 						PuPEvent(401)
 						PuPEvent(541)
+						DOF 541, DOFPulse
 						
 
 			Case    5 : DMD_ShowText "BONUS",1,FontWhite3,16,True,40,3000
@@ -19877,6 +19944,7 @@ Sub DMD_EOB_Bonus
 			Case   65 : DMD_ShowText "MISSIONS " & CurrentMissionCount ,1,FontWhite3,11,False,40,3000
 						LS_Flash5.StopPlay: LS_Flash5.UpdateInterval = 200:	LS_Flash5.Play SeqBlinking ,,EOB_Missions,10
 						PuPEvent(542)
+						DOF 542, DOFPulse
 						PuPlayer.LabelShowPage pDMD,9,2,""				    
 						puPlayer.LabelSet pDMD, "BonusMissions1", ""& FormatScore( CurrentMissionCount  * bonus_EOB_Missions ),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 						puPlayer.LabelSet pDMD, "BonusMissions", ""& CurrentMissionCount,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -19890,6 +19958,7 @@ Sub DMD_EOB_Bonus
 			Case   210 : DMD_ShowText "RAMPS " & EOB_Ramps,1,FontWhite3,11,False,40,3000
 						LS_Flash5.StopPlay: LS_Flash5.UpdateInterval = 200:	LS_Flash5.Play SeqBlinking ,,EOB_Ramps,10
 						PuPEvent(543)
+						DOF 543, DOFPulse
 						PuPlayer.LabelShowPage pDMD,9,1.5,""				    
 						puPlayer.LabelSet pDMD, "Ramps1", ""& FormatScore( EOB_Ramps * bonus_EOB_Ramps ),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 						puPlayer.LabelSet pDMD, "Ramptotal", ""& EOB_Ramps,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -19902,6 +19971,7 @@ Sub DMD_EOB_Bonus
 			Case  355 : DMD_ShowText "MIMALOOP " & EOB_MimaLoops ,1,FontWhite3,11,False,40,3000
 						LS_Flash5.StopPlay: LS_Flash5.UpdateInterval = 200:	LS_Flash5.Play SeqBlinking ,,EOB_MimaLoops,10
 						PuPEvent(544)
+						DOF 544, DOFPulse
 						PuPlayer.LabelShowPage pDMD,9,1.5,""				    
 						puPlayer.LabelSet pDMD, "MimaLoopTotal", ""& FormatScore( EOB_MimaLoops * bonus_EOB_MimaLoops ),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 						puPlayer.LabelSet pDMD, "MimaLoop3", ""& EOB_MimaLoops ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -19912,6 +19982,7 @@ Sub DMD_EOB_Bonus
 						pDMDSetPage(pDMDBlank)
 			Case  500 : DMD_ShowText "BONUS",1,FontWhite3,11,False,40,3000
 						PuPEvent(545)
+						DOF 545, DOFPulse
 						PuPlayer.LabelShowPage pDMD,9,1.5,""
 						puPlayer.LabelSet pDMD, "BonusDrainTotal", ""&FormatScore( TOTALEOBBONUSvisible) ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 						DMD_ShowText FormatScore( TOTALEOBBONUSvisible ),2,FontWhite3,22,False,40,3000
@@ -20003,6 +20074,7 @@ Sub DMD_EOB_Bonus
 			Case  840: Score(currentplayer) = Score(currentplayer) + ( TOTALEOBBONUS * BonusMultiplier(CurrentPlayer) )
 						DMD_ShowText "TOTAL SCORE" ,1,FontWhite3,11,False,40,3000
 						PuPEvent(546)
+						DOF 546, DOFPulse
 						PuPlayer.LabelShowPage pDMD,9,2,""
 						puPlayer.LabelSet pDMD, "ScoreTotal", ""&FormatScore( Score(currentplayer)) ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 						DMD_ShowText FormatScore( Score(currentplayer)),2,FontWhite3,22,true,40,3000
@@ -23026,6 +23098,7 @@ If HasPuP=False then exit Sub
 	pDMD_CurSequencePos=0
 	pDMD_Sequence.Enabled=false
     PuPEvent(500)
+	Dof 500, DOFPulse
 end Sub
 
 
@@ -23603,6 +23676,7 @@ If HasPuP=False then exit Sub
  Case Else
 	If BumperHitsPup(CurrentPlayer)>=16 Then
 	   PuPEvent(632)
+		DOF 632, DOFPulse
 		End If
  end Select		
 End Sub
@@ -23659,6 +23733,7 @@ Sub PupBallSaveMBControl
 If HasPuP=False then exit Sub
 	If bMultiBallMode = False Then
 	PuPEvent(502)
+	Dof 502, DOFPulse
 	End If
 	If bMultiBallMode = True then
 	PuPEvent(636)
@@ -23677,15 +23752,19 @@ Sub PlayerUpFull
 If HasPuP=False then exit Sub
 	If CurrentPlayer=1 Then
 	PuPEvent 888
+	DOF 888, DOFPulse
 	End If
 	If CurrentPlayer=2 Then
 	PuPEvent 889
+	DOF 889, DOFPulse
 	End If
 	If CurrentPlayer=3 Then
 	PuPEvent 890
+	DOF 890, DOFPulse
 	End If
 	If CurrentPlayer=4 Then
 	PuPEvent 891
+	DOF 891, DOFPulse
 	End If
 End Sub
 
@@ -23771,6 +23850,7 @@ Sub DrainPupvideo_Timer
 If HasPuP=False then exit Sub
 	DrainPupvideo.Enabled=False
 	PuPEvent(501)
+	Dof 501, DOFPulse
 End Sub
 
 Sub MissionPointsPup_Timer
