@@ -59,7 +59,7 @@
 '1.27 iaakki - Fixed paths with spaces issue, renamed all pupchecks to HasPup variable, some minor improvements, possible fix for 4 player bug
 '1.28 iaakki - HighScore input without pup crash fix, qrview binary moved to tables folder, csv log moved to BMQR folder, BMQR folder is now created if not existing.
 '			   QR image casting time raised from 500 to 700ms as some slower systems may fail to load the image that fast
-'1.31 iaakki - all efx sounds uses calloutvolume now, SSF redone using Fleep sounds from TNA. Custom bumpersounds mixes from TNA and BPT samples, various fixes
+'1.32 iaakki - all efx sounds uses calloutvolume now, SSF redone using Fleep sounds from TNA. Custom bumpersounds mixes from TNA and BPT samples, various fixes
 
 'todo: 
 ' - ssf changes??
@@ -73,7 +73,7 @@ Randomize
 
 
 	
-Const HasPuP = false   ' False=FlexDMD (default) , True=PUPDMD
+Const HasPuP = true  ' False=FlexDMD (default) , True=PUPDMD
 
 '**************************
 '   PinUp Player USER Config
@@ -3890,16 +3890,11 @@ Sub Table1_KeyDown(ByVal Keycode)
 	If hsbModeActive Then EnterHighscoreName(keycode) : exit Sub
 
 
-	if keycode = StartGameKey then soundStartButton
-	   If pDMDmode="attract" And Credits=0 Then
-		puPlayer.LabelShowPage pDMD,9,1,""
-		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
-	  End if
-		If pDMDmode="go" And Credits=0 Then
-		puPlayer.LabelShowPage pDMD,9,1,""
-		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
-
+	if keycode = StartGameKey then
+	 soundStartButton
+	 CoinErrorText
 	end if
+
 	if bBallInPlungerLane And keycode = LeftFlipperKey Then
 		'debug.print "OpenTopGate left flip"
 		bOpenTopGate = true
@@ -3958,11 +3953,7 @@ Sub Table1_KeyDown(ByVal Keycode)
 				End If
 
 				if EobBonusCounter > 2 then 
-					if HasPuP then
-						EobBonusCounter = 830 'skip EOBbonus counting PUP
-					else
-						EobBonusCounter = 530 'skip EOBbonus counting Flex
-					end if
+						EobBonusCounter = 530 'skip EOBbonus counting Fle
 				end if
 
 				FlipperActivate LeftFlipper, LFPress
@@ -8887,7 +8878,6 @@ Sub CheckCemeteryShot(nr)
 				AddBonus bonus_Mission4_SkyShot
 				ShowAddScoreText = FormatScore(score_Mission4_SkyShot* PointMultiplier)
 				Pupwithoutlightplay
-				Pupwithoutlightend
 				MissionPointsPup.Enabled=True
 				ShowAddScore = 1
 				creditblink=60
@@ -8897,7 +8887,6 @@ Sub CheckCemeteryShot(nr)
 				AddMissionScore 4,score_Mission4_RampShot 
 				ShowAddScoreText =FormatScore( score_Mission4_RampShot* PointMultiplier)
 				Pupwithlightplay
-				Pupwithlightend
 				ShowAddScore = 1
 				creditblink=60
 				WriteToLog "Mission 4", "Ramp Hit"
@@ -8916,6 +8905,7 @@ Sub CheckCemeteryShot(nr)
 End Sub
 
 Sub Pupwithoutlightplay
+If HasPuP=False then exit Sub
 	If TotalCemeteryHits < 4 Then
 		ScoreMissionPoints = "4a"
 		MissionPointsPup.Enabled=True
@@ -8923,13 +8913,14 @@ Sub Pupwithoutlightplay
 End Sub
 
 Sub Pupwithoutlightend
+If HasPuP=False then exit Sub
 	If TotalCemeteryHits >= 4 Then
-		ScoreMissionPoints = "4c"
-		MissionPointsPup.Enabled=True
+		ModeTextDelay4c1.Enabled=True
 	End if
 End Sub
 
 Sub Pupwithlightplay
+If HasPuP=False then exit Sub
 	If TotalCemeteryHits < 4 Then
 		ScoreMissionPoints = "4b"
 		MissionPointsPup.Enabled=True
@@ -8937,9 +8928,9 @@ Sub Pupwithlightplay
 End Sub
 
 Sub Pupwithlightend
+If HasPuP=False then exit Sub
 	If TotalCemeteryHits >= 4 Then
-		ScoreMissionPoints = "4c2"
-		MissionPointsPup.Enabled=True
+	ModeTextDelay4c2.Enabled=True
 	End if
 End Sub
 
@@ -8959,7 +8950,8 @@ Sub EndMission4
 
 	If MissionCompleted Then
 		EOB_Missions = EOB_Missions + 1
-
+		Pupwithlightend
+		Pupwithoutlightend
 		cLightMission4.state=1
 		CheckMissionCompleteAward
 		WriteToLog "Mission 4", "Completed"
@@ -9112,6 +9104,7 @@ Sub CheckPortalRoomShot(nr)
 End Sub
 
 Sub PupPortalScore
+If HasPuP=False then exit Sub
 	If VascanShotCount < 6 Then 
 	ScoreMissionPoints = "5"
 	MissionPointsPup.Enabled=True
@@ -9119,6 +9112,7 @@ Sub PupPortalScore
 End Sub
 
 Sub PupPortalFinish
+If HasPuP=False then exit Sub
 	If VascanShotCount = 6 Then
 		ScoreMissionPoints = "5c"
 		MissionPointsPup.Interval= 4500
@@ -9271,6 +9265,7 @@ Sub CheckHeartOfSteelShot
 End Sub
 
 Sub HeartPupScoring
+If HasPuP=False then exit Sub
 	If TotalHeartOfSteelHits < 25 Then
 	ScoreMissionPoints = "6"
 	MissionPointsPup.Enabled=True
@@ -9279,6 +9274,7 @@ End Sub
 
 
 Sub PupHeartFinish
+If HasPuP=False then exit Sub
 	ScoreMissionPoints = "6c"
 	MissionPointsPup.Interval=3000
 	MissionPointsPup.Enabled=True
@@ -9414,12 +9410,14 @@ Sub CheckBetrayalMissionShot(nr)
 End Sub
 
 Sub BetrayPupScoring
+If HasPuP=False then exit Sub
 	ScoreMissionPoints = "7"
 	MissionPointsPup.Enabled=True
 End Sub
 
 
 Sub PupBetrayFinish
+If HasPuP=False then exit Sub
 	ScoreMissionPoints = "7c"
 	MissionPointsPup.Interval=3000
 	MissionPointsPup.Enabled=True
@@ -19861,7 +19859,7 @@ Sub DMD_EOB_Bonus
 	if HasPuP then
 		Select Case EobBonusCounter
 			Case    2 : StopVideosPlaying
-'						SkipEnd = True
+						SkipEnd=True
 						DMD_ShowImages "attract",1,500,-1,0
 						TOTALEOBBONUS = 0
 						TOTALEOBBONUS = TOTALEOBBONUS + (CurrentMissionCount * bonus_EOB_Missions )
@@ -20001,7 +19999,7 @@ Sub DMD_EOB_Bonus
 						puPlayer.LabelSet pDMD,"Multi", "10X",1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
 						End If
 			Case  830 : pDMDSetPage(pDMDBlank)
-'						SkipEnd = False
+						SkipEnd = False
 			Case  840: Score(currentplayer) = Score(currentplayer) + ( TOTALEOBBONUS * BonusMultiplier(CurrentPlayer) )
 						DMD_ShowText "TOTAL SCORE" ,1,FontWhite3,11,False,40,3000
 						PuPEvent(546)
@@ -20390,8 +20388,6 @@ Dim Enterblinking
 Dim bEnterHighCounter
 Sub DMD_EnterHigh
 	PupDMDHSInput
-	pDMDSetPage(9):puPlayer.LabelSet pDMD, "HIGHSCORE1P", "ENTER NAME:", 1,""
-	pDMDSetPage(9):puPlayer.LabelSet pDMD,	"HSSCORE","" & FormatNumber(Score(CurrentPlayer),0),1,""
 	Dim Displaytext
 	Enterblinking = Enterblinking +1
 	If ( Enterblinking mod 50 ) >20 Then
@@ -22500,7 +22496,7 @@ Dim pInAttract : pInAttract=false   'pAttract mode
 
 '*************  starts PUP system,  must be called AFTER b2s/controller running so put in last line of table1_init
 Sub PuPInit
-if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
 Set PuPlayer = CreateObject("PinUpPlayer.PinDisplay")   
 PuPlayer.B2SInit "", pGameName
 
@@ -22534,6 +22530,7 @@ End Sub 'end PUPINIT
 'PinUP Player DMD Helper Functions
 
 Sub pDMDLabelHide(labName)
+If HasPuP=False then exit Sub
 PuPlayer.LabelSet pDMD,labName,"",0,""   
 end sub
 
@@ -22541,31 +22538,37 @@ end sub
 
 
 Sub pDMDScrollBig(msgText,timeSec,mColor)
+If HasPuP=False then exit Sub
 PuPlayer.LabelShowPage pDMD,2,timeSec,""
 PuPlayer.LabelSet pDMD,"Splash",msgText,0,"{'mt':1,'at':2,'xps':1,'xpe':-1,'len':" & (timeSec*1000000) & ",'mlen':" & (timeSec*1000) & ",'tt':0,'fc':" & mColor & "}"
 end sub
 
 Sub pDMDScrollBigV(msgText,timeSec,mColor)
+If HasPuP=False then exit Sub
 PuPlayer.LabelShowPage pDMD,2,timeSec,""
 PuPlayer.LabelSet pDMD,"Splash",msgText,0,"{'mt':1,'at':2,'yps':1,'ype':-1,'len':" & (timeSec*1000000) & ",'mlen':" & (timeSec*1000) & ",'tt':0,'fc':" & mColor & "}"
 end sub
 
 
 Sub pDMDSplashScore(msgText,timeSec,mColor)
+If HasPuP=False then exit Sub
 PuPlayer.LabelSet pDMD,"MsgScore",msgText,0,"{'mt':1,'at':1,'fq':250,'len':"& (timeSec*1000) &",'fc':" & mColor & "}"
 end Sub
 
 Sub pDMDSplashScoreScroll(msgText,timeSec,mColor)
+If HasPuP=False then exit Sub
 PuPlayer.LabelSet pDMD,"MsgScore",msgText,0,"{'mt':1,'at':2,'xps':1,'xpe':-1,'len':"& (timeSec*1000) &", 'mlen':"& (timeSec*1000) &",'tt':0, 'fc':" & mColor & "}"
 end Sub
 
 Sub pDMDZoomBig(msgText,timeSec,mColor)  'new Zoom
+If HasPuP=False then exit Sub
 PuPlayer.LabelShowPage pDMD,2,timeSec,""
 PuPlayer.LabelSet pDMD,"Splash",msgText,0,"{'mt':1,'at':3,'hstart':5,'hend':80,'len':" & (timeSec*1000) & ",'mlen':" & (timeSec*500) & ",'tt':5,'fc':" & mColor & "}"
 end sub
 
 Sub pDMDTargetLettersInfo(msgText,msgInfo, timeSec)  'msgInfo = '0211'  0= layer 1, 1=layer 2, 2=top layer3.
 'this function is when you want to hilite spelled words.  Like B O N U S but have O S hilited as already hit markers... see example.
+If HasPuP=False then exit Sub
 PuPlayer.LabelShowPage pDMD,5,timeSec,""  'show page 5
 Dim backText
 Dim middleText
@@ -22609,20 +22612,20 @@ end Sub
 
 
 Sub pDMDSetPage(pagenum)
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
     PuPlayer.LabelShowPage pDMD,pagenum,0,""   'set page to blank 0 page if want off
     PDMDCurPage=pagenum
 end Sub
 
 Sub pHideOverlayText(pDisp)
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
     PuPlayer.SendMSG "{ ""mt"":301, ""SN"": "& pDisp &", ""FN"": 34 }"             'hideoverlay text during next videoplay on DMD auto return
 end Sub
 
 
 
 Sub pDMDShowLines3(msgText,msgText2,msgText3,timeSec)
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
 Dim vis:vis=1
 if pLine1Ani<>"" Then vis=0
 PuPlayer.LabelShowPage pDMD,3,timeSec,""
@@ -22633,7 +22636,7 @@ end Sub
 
 
 Sub pDMDShowLines2(msgText,msgText2,timeSec)
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
 Dim vis:vis=1
 if pLine1Ani<>"" Then vis=0
 PuPlayer.LabelShowPage pDMD,4,timeSec,""
@@ -22642,7 +22645,7 @@ PuPlayer.LabelSet pDMD,"Splash4b",msgText2,vis,pLine2Ani
 end Sub
 
 Sub pDMDShowCounter(msgText,msgText2,msgText3,timeSec)
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
 Dim vis:vis=1
 if pLine1Ani<>"" Then vis=0
 PuPlayer.LabelShowPage pDMD,6,timeSec,""
@@ -22653,7 +22656,7 @@ end Sub
 
 
 Sub pDMDShowBig(msgText,timeSec, mColor)
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
 Dim vis:vis=1
 if pLine1Ani<>"" Then vis=0
 PuPlayer.LabelShowPage pDMD,2,timeSec,""
@@ -22662,7 +22665,7 @@ end sub
 
 
 Sub pDMDShowHS(msgText,msgText2,msgText3,timeSec) 'High Score
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
 Dim vis:vis=1
 if pLine1Ani<>"" Then vis=0
 PuPlayer.LabelShowPage pDMD,7,timeSec,""
@@ -22673,18 +22676,18 @@ end Sub
 
 
 Sub pDMDSetBackFrame(fname)
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
   PuPlayer.playlistplayex pDMD,"PUPFrames",fname,0,1    
 end Sub
 
 Sub pDMDStartBackLoop(fPlayList,fname)
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
   PuPlayer.playlistplayex pDMD,fPlayList,fname,0,1
   PuPlayer.SetBackGround pDMD,1
 end Sub
 
 Sub pDMDStopBackLoop
-	if Not HasPuP then exit sub
+If HasPuP=False then exit Sub
   PuPlayer.SetBackGround pDMD,0
   PuPlayer.playstop pDMD
 end Sub
@@ -22730,7 +22733,7 @@ Sub pupDMDDisplay(pEventID, pText, VideoName,TimeSec, pAni,pPriority)
 ' TimeSec how long to display msg in Seconds
 ' animation if any 0=none 1=Flasher
 ' also,  now can specify color of each line (when no animation).  "sometext|12345"  will set label to "sometext" and set color to 12345
-
+If HasPuP=False then exit Sub
 DIM curPos
 if pDMDCurPriority>pPriority then Exit Sub  'if something is being displayed that we don't want interrupted.  same level will interrupt.
 pDMDCurPriority=pPriority
@@ -22816,6 +22819,7 @@ PriorityReset=TimeSec*1000
 End Sub 'pupDMDDisplay message
 
 Sub pupDMDupdate_Timer()
+If HasPuP=False then exit Sub
 	pUpdateScores    
 
     if PriorityReset>0 Then  'for splashes we need to reset current prioirty on timer
@@ -22837,7 +22841,7 @@ Sub pupDMDupdate_Timer()
 End Sub
 
 Sub PuPEvent(EventNum)
-	if hasPUP=false then Exit Sub
+If HasPuP=False then exit Sub
 	PuPlayer.B2SData "E"&EventNum,1  'send event to puppack driver  
 End Sub
 
@@ -22853,6 +22857,7 @@ End Sub
 '*****************************************************************
 
 Sub pSetPageLayouts
+If HasPuP=False then exit Sub
 
 DIM dmddef
 DIM dmdalt
@@ -23014,6 +23019,7 @@ end Sub 'page Layouts
 
 
 Sub pDMDStartGame	
+If HasPuP=False then exit Sub
 	pInAttract=false
 	pDMDSetPage(pScores)
 	pDMDmode="default"
@@ -23024,6 +23030,7 @@ end Sub
 
 
 Sub pDMDGameOver
+If HasPuP=False then exit Sub
 	pDMDSetPage(9)
 	pDMDmode="go"
 	pDMD_CurSequencePos=0
@@ -23032,6 +23039,7 @@ Sub pDMDGameOver
 end Sub
 
 Sub pAttractStart
+If HasPuP=False then exit Sub
 	pDMDSetPage(0)   'set blank text overlay page.
 	pDMDmode="attract"
 	pDMD_CurSequencePos=0
@@ -23040,6 +23048,7 @@ Sub pAttractStart
 end Sub
 
 Sub pDMDStartUP
+If HasPuP=False then exit Sub
 	pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
 	puPlayer.LabelSet pDMD,"GameOver","Game Over" ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
 	pDMDSetPage(9)
@@ -23058,7 +23067,7 @@ Dim pDMD_CurSequencePos:pDMD_CurSequencePos=0
 Dim pDMDmode: pDMDmode="default"
 
 Sub pDMD_Sequence_Timer
-	if not HasPuP then exit sub
+If HasPuP=False then exit Sub
 	pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
 	puPlayer.LabelSet pDMD,"GameOver","Game Over" ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
 	pDMD_CurSequencePos=pDMD_CurSequencePos+1
@@ -23122,6 +23131,7 @@ Dim Smalldisplayscore:Smalldisplayscore = "Default"
 
 
 Sub pUpdateScores  'call this ONLY on timer 300ms is good enough
+If HasPuP=False then exit Sub
 if pDMDCurPage <> pScores then Exit Sub
 
 puPlayer.LabelSet pDMD,"Ball","Ball: " & (bpgcurrent - BallsRemaining(CurrentPlayer) + 1),1,""
@@ -23433,6 +23443,7 @@ End Sub
 
 
 Sub PlayersPUP 'NextPlayer
+If HasPuP=False then exit Sub
 	If CurrentPlayer =1 Then
 	Gameplayerup ="1"
 	PuPEvent(700)
@@ -23452,6 +23463,7 @@ Sub PlayersPUP 'NextPlayer
 End Sub	
 
 Sub PlayersAreInGame
+If HasPuP=False then exit Sub
 	If PlayersPlayingGame =1 Then
 	GameplayerNotup= "6"
 	End If
@@ -23470,6 +23482,7 @@ End Sub
 
 
 Sub SmallScores  'checkStartGameKey
+If HasPuP=False then exit Sub
  If GameplayerNotup= "2" Then
 	puPlayer.LabelSet pDMD,"Smallscore2","PRESS START",0,"{'mt':2,'color':11842740 , 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	Player2Signin.Enabled= True
@@ -23492,18 +23505,21 @@ End Sub
 ' Locking Player text
 
 Sub LockPlayer1 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "7" Then
 	puPlayer.LabelSet pDMD,"Smallscore1","" & FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	End if
 End Sub
 
 Sub LockPlayer2 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "7" Then
 	puPlayer.LabelSet pDMD,"Smallscore2","" & FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	End if
 End Sub
 
 Sub LockPlayer3 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "8" Then
 	puPlayer.LabelSet pDMD,"Smallscore3","" & FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	puPlayer.LabelSet pDMD,"Smallscore1","" & FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23511,6 +23527,7 @@ Sub LockPlayer3
 End Sub
 
 Sub LockPlayer3L 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "8" Then
 	puPlayer.LabelSet pDMD,"Smallscore3","" & FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	puPlayer.LabelSet pDMD,"Smallscore2","" & FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23518,6 +23535,7 @@ Sub LockPlayer3L
 End Sub
 
 Sub LockPlayer3R 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "8" Then
 	puPlayer.LabelSet pDMD,"Smallscore1","" & FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	puPlayer.LabelSet pDMD,"Smallscore2l","" & FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23525,6 +23543,7 @@ Sub LockPlayer3R
 End Sub
 
 Sub LockPlayer4 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "9" Then
 	puPlayer.LabelSet pDMD,"Smallscore1","" & FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	puPlayer.LabelSet pDMD,"Smallscore2l","" & FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23533,6 +23552,7 @@ Sub LockPlayer4
 End Sub
 
 Sub LockPlayer4l 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "9" Then
 	puPlayer.LabelSet pDMD,"Smallscore2","" & FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	puPlayer.LabelSet pDMD,"Smallscore3","" & FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23541,6 +23561,7 @@ Sub LockPlayer4l
 End Sub
 
 Sub LockPlayer4M 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "9" Then
 	puPlayer.LabelSet pDMD,"Smallscore4","" & FormatScore(Score(4)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	puPlayer.LabelSet pDMD,"Smallscore1","" & FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23549,6 +23570,7 @@ Sub LockPlayer4M
 End Sub
 
 Sub LockPlayer4R 
+If HasPuP=False then exit Sub
 	If GameplayerNotup= "9" Then
 	puPlayer.LabelSet pDMD,"Smallscore2l","" & FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	puPlayer.LabelSet pDMD,"Smallscore1","" & FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23560,6 +23582,7 @@ End Sub
 'TracyBumper
 
 Sub TracyPupCount
+If HasPuP=False then exit Sub
 	BumperHitsPup(CurrentPlayer)= BumperHitsPup(CurrentPlayer)  + 1
 	Select Case BumperHitsPup(CurrentPlayer)
 	Case 1: PuPEvent(617)
@@ -23587,36 +23610,42 @@ End Sub
 'Multiball
 
 Sub TracyMBloop
+If HasPuP=False then exit Sub
 	If MBPUP = "1" Then
 	PuPEvent 810
 	End if
 End Sub
 
 Sub StopTracyMBPup
+If HasPuP=False then exit Sub
 	If MBPUP = "2" & bMultiBallMode = False then
 	PuPEvent 811
 	End If
 End Sub
 
 Sub MimaMBloop
+If HasPuP=False then exit Sub
 	If MBPUP = "3" Then
 	PuPEvent 812
 	End If
 End Sub
 
 Sub StopMimaMBPup
+If HasPuP=False then exit Sub
 	If MBPUP = "4" & bMultiBallMode = False Then
 	PuPEvent 813
 	End If
 End Sub
 
 Sub CoreyMBloop
+If HasPuP=False then exit Sub
 	If MBPUP = "5" Then
 	PuPEvent 814
 	End If
 End Sub
 
 Sub StopCoreyMBPup
+If HasPuP=False then exit Sub
 	If MBPUP = "6" & bMultiBallMode = False Then
 	PuPEvent 815
 	End If
@@ -23627,6 +23656,7 @@ End Sub
 'Ball Save
 
 Sub PupBallSaveMBControl
+If HasPuP=False then exit Sub
 	If bMultiBallMode = False Then
 	PuPEvent(502)
 	End If
@@ -23636,6 +23666,7 @@ Sub PupBallSaveMBControl
 End Sub
 
 Sub MultiStopHeart
+If HasPuP=False then exit Sub
 	If bMissionMode = True Then
 	PuPEvent(637)
 	End If
@@ -23643,6 +23674,7 @@ End Sub
 
 'Players
 Sub PlayerUpFull
+If HasPuP=False then exit Sub
 	If CurrentPlayer=1 Then
 	PuPEvent 888
 	End If
@@ -23657,7 +23689,9 @@ Sub PlayerUpFull
 	End If
 End Sub
 
+'skip to total
 Sub SkiptoEndTotal
+If HasPuP=False then exit Sub
  If	SkipEnd = False then exit Sub
  If SkipEnd  = True Then
   EobBonusCounter = 810
@@ -23665,13 +23699,29 @@ Sub SkiptoEndTotal
 End if
 End Sub
 
+'coin
+
+Sub CoinErrorText
+ If HasPuP= False Then Exit Sub
+	If pDMDmode="attract" And Credits=0 Then
+		puPlayer.LabelShowPage pDMD,9,1,""
+		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
+	  End if
+		If pDMDmode="go" And Credits=0 Then
+		puPlayer.LabelShowPage pDMD,9,1,""
+		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
+
+	end if
+End Sub
 
 
 
 'High Score
 
 Sub PupDMDHSInput
-	if Not HasPuP then exit Sub
+If HasPuP=False then exit Sub
+	pDMDSetPage(9):puPlayer.LabelSet pDMD, "HIGHSCORE1P", "ENTER NAME:", 1,""
+	pDMDSetPage(9):puPlayer.LabelSet pDMD,	"HSSCORE","" & FormatNumber(Score(CurrentPlayer),0),1,""
 	If ( Enterblinking mod 50 ) >20 Then
 		If Len(EnterName) = 0 Then pDMDSetPage(9):puPlayer.LabelSet pDMD, "HIGHSCORE2P","<" & mid("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",EnterNamePos,1) & ">", 1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 		If Len(EnterName) = 1 Then pDMDSetPage(9):puPlayer.LabelSet pDMD, "HIGHSCORE2P",Entername & "<" & mid("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",EnterNamePos,1) & ">", 1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23691,16 +23741,19 @@ End Sub
 
 'Pupdmd Gameplay Timers
 Sub Player2Signin_Timer
+If HasPuP=False then exit Sub
 	Player2Signin.Enabled=False
 	puPlayer.LabelSet pDMD,"Smallscore2","" & FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 End Sub
 
 Sub Player3Signin_Timer
+If HasPuP=False then exit Sub
 	Player3Signin.Enabled=False
 	puPlayer.LabelSet pDMD,"Smallscore3",""& FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 End Sub
 
 Sub Player4Signin_Timer
+If HasPuP=False then exit Sub
 	Player4Signin.Enabled=False
 	puPlayer.LabelSet pDMD,"Smallscore4",""& FormatScore(Score(4)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 End Sub
@@ -23708,17 +23761,20 @@ End Sub
 
 
 Sub DrainMissionPup_Timer
+If HasPuP=False then exit Sub
 	DrainMissionPup.Enabled=False
 	PupMission= "Default"
 	DrainPupvideo.Enabled=True
 End Sub
 
 Sub DrainPupvideo_Timer
+If HasPuP=False then exit Sub
 	DrainPupvideo.Enabled=False
 	PuPEvent(501)
 End Sub
 
 Sub MissionPointsPup_Timer
+If HasPuP=False then exit Sub
 	MissionPointsPup.Enabled=False
 	ScoreMissionPoints = "Default"
 End Sub
@@ -23729,6 +23785,7 @@ Sub MissionPointsPupC_Timer
 End Sub
 
 Sub MBPupCheck_Timer
+If HasPuP=False then exit Sub
 	MBPupCheck.Enabled=False
 	If bTracyMBOngoing = True Then
 	PuPEvent 810
@@ -23736,6 +23793,7 @@ Sub MBPupCheck_Timer
 End Sub
 
 Sub ModeTextDelay1_Timer
+If HasPuP=False then exit Sub
 	ModeTextDelay1.Enabled=False
 	PupMission= "PMission1"
 End Sub
@@ -23746,42 +23804,66 @@ Sub ModeTextDelay2_Timer
 End Sub
 
 Sub ModeTextDelay3_Timer
+If HasPuP=False then exit Sub
 	ModeTextDelay3.Enabled=False
 	PupMission= "PMission3"
 End Sub
 
 Sub ModeTextDelay4_Timer
+If HasPuP=False then exit Sub
 	ModeTextDelay4.Enabled=False
 	PupMission= "PMission4"
 End Sub
 
+Sub ModeTextDelay4c2_Timer
+If HasPuP=False then exit Sub
+	ModeTextDelay4c2.Enabled=False
+	PupMission= "Default"
+	ScoreMissionPoints = "4c2"
+	MissionPointsPup.Enabled=True
+End Sub
+
+Sub ModeTextDelay4c1_Timer
+If HasPuP=False then exit Sub
+	ModeTextDelay4c1.Enabled=False
+	PupMission= "Default"
+	ScoreMissionPoints = "4c"
+	MissionPointsPup.Enabled=True
+End Sub
+
 
 Sub ModeTextDelay6_Timer
+If HasPuP=False then exit Sub
 	ModeTextDelay6.Enabled=False
 	PupMission= "PMission6"
 End Sub
 
 Sub SkillShotPup_Timer
+If HasPuP=False then exit Sub
 	SkillShotPup.Enabled=False
 	SkillPupFlash="Default"
 End Sub
 
 Sub SkillShotPup2_Timer
+If HasPuP=False then exit Sub
 	SkillShotPup2.Enabled=False
 	SkillPupFlash="Default"
 End Sub
 
 Sub SkillShotPup3_Timer
+If HasPuP=False then exit Sub
 	SkillShotPup3.Enabled=False
 	SkillPupFlash="Default"
 End Sub
 
 Sub SkillShotPup4_Timer
+If HasPuP=False then exit Sub
 	SkillShotPup3.Enabled=False
 	SkillPupFlash="Default"
 End Sub
 
 Sub GS_Timer
+If HasPuP=False then exit Sub
 	GS.Enabled=False
 	GunshotPUP = "Default"
 End Sub
