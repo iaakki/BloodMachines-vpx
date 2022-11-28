@@ -60,12 +60,17 @@
 '1.28 iaakki - HighScore input without pup crash fix, qrview binary moved to tables folder, csv log moved to BMQR folder, BMQR folder is now created if not existing.
 '			   QR image casting time raised from 500 to 700ms as some slower systems may fail to load the image that fast
 '1.32 iaakki - all efx sounds uses calloutvolume now, SSF redone using Fleep sounds from TNA. Custom bumpersounds mixes from TNA and BPT samples, various fixes
+'1.33 heartbeatDM - hasPuP checks to all related subs
+'1.34 Frank  - MX Dof additions
+'1.35 iaakki - Error messages shown if Scorbit binaries are not found in correct folders, flipkey and other flip ssf handling tweaks. EOB skip redone, 
 
 'todo: 
-' - ssf changes??
-' - Is SSF sounds for flips really disabled when using DOF?
-'- VR backglass for pupdmd
-'- Check can one find the place where vpx is loaded, or will we update the infos that exes needs to be copied into real tables folder. 
+' - ssf changes mostly done, but fine tuning needed to various areas.
+'   - New wire ramp sounds are not looping, is it ok?
+'   - Is SSF sounds for flips really disabled when using DOF?
+'   - Rubbers, shaker, some minor SSF tweaks
+' - VR backglass for pupdmd
+
 
 
 Option Explicit
@@ -73,7 +78,7 @@ Randomize
 
 
 	
-Const HasPuP = true  ' False=FlexDMD (default) , True=PUPDMD
+Const HasPuP = false  ' False=FlexDMD (default) , True=PUPDMD
 
 '**************************
 '   PinUp Player USER Config
@@ -94,7 +99,7 @@ Const VRRoom = 0					'0 - VR Room off, 1 - 360 Room, 2 - Minimal Room, 3 - Ultra
 
 '/////////////////////-----Scorbit Options-----////////////////////
 
-Const ScorbitActive				= 1		' Is Scorbit Active	
+ScorbitActive				= 1		' Is Scorbit Active	
 Const     ScorbitShowClaimQR	= 1 	' If Scorbit is active this will show a QR Code in the bottom left on ball 1 that allows player to claim the active player from the app
 'Const     ScorbitClaimSmall		= 0 	' Make Claim QR Code smaller for high res backglass 
 Const     ScorbitUploadLog		= 1 	' Store local log and upload after the game is over 
@@ -143,6 +148,8 @@ Const AmbientAudioVolume = 0.00004	'Ambient volume. When no music available, the
 Const KeepLogs = false 		'set True to save debug log file
 Const KeepDOFLogs = False 	'set True to save DOF logs. KeepLogs must also be True
 
+
+dim ScorbitActive
 'This should point to the path where all the original sound track music is placed
 'dim MusicDirectory : MusicDirectory = "C:\Visual Pinball\Music\Blood Machines OST"
 dim MusicDirectory : MusicDirectory = GetMusicFolder & "\Blood Machines OST"
@@ -3794,26 +3801,6 @@ Sub DMD_DisplayMystery(Number)
 End Sub
 
 
-'Sub RewardMystery
-'	WriteToLog "RewardMystery", ""
-'    If Tilted Then Exit Sub
-'	Select Case DMDMysteryReward   ' Fixing  EB special Litelock ?
-'		Case 1 : Addscore 10000000
-'		Case 2 : Addscore  8000000
-'		Case 3 : Addscore  5000000
-'		Case 4 : Addscore 15000000
-'		Case 5 : Addscore 17000000
-'		Case 6 : Addscore 20000000
-'		Case 7 : Addscore 20000000
-'		Case 8 : Addscore 20000000
-'		Case 9: cLightCollectExtraBall.state=2	 ' EB
-'				AudioCallout "extra ball lit"
-'				' fixing sound blinks ..
-'
-'	End Select
-'End Sub
-
-
 
 '*************************************************
 '*****   FLEX DMD ENDS
@@ -3836,10 +3823,6 @@ End Function
 Function dCos(degrees)
 	dcos = cos(degrees * Pi/180)
 End Function
-
-'Function Radians(angle)
-'	Radians = PI * angle / 180
-'End Function
 
 
 Function max(a,b)
@@ -3866,6 +3849,16 @@ end Function
 dim bOpenTopGate:bOpenTopGate = False
 dim bPlungerPulled : bPlungerPulled = False
 dim SKBackup : SKBackup = 0
+
+sub SkiptoEndTotal
+	if HasPuP and (EobBonusCounter > 2 and EobBonusCounter < 809) then
+		EobBonusCounter = 810 'skip EOBbonus counting PUP
+	elseif Not HasPuP and (EobBonusCounter > 2 and EobBonusCounter < 499) then
+		EobBonusCounter = 500 'skip EOBbonus counting Flex
+	end if
+debug.print "skip to: " & EobBonusCounter
+	
+end sub
 
 Sub Table1_KeyDown(ByVal Keycode)
 
@@ -3928,8 +3921,6 @@ Sub Table1_KeyDown(ByVal Keycode)
 			if StagedFlipperMod = 1 Then
 				If keycode = KeyUpperLeft and bFlippersEnabled Then 
 					Flipper1.RotateToEnd
-'					SoundFlipperUpAttackLeft Flipper1
-'					RandomSoundFlipperUpLeft Flipper1
 					If Flipper1.currentangle < Flipper1.endangle + ReflipAngle Then
 						'Play partial flip sound and stop any flip down sound
 						StopAnyFlipperUpperLeftDown()
@@ -3952,18 +3943,12 @@ Sub Table1_KeyDown(ByVal Keycode)
 					end if
 				End If
 
-				if EobBonusCounter > 2 then 
-						EobBonusCounter = 530 'skip EOBbonus counting Fle
-				end if
-
 				FlipperActivate LeftFlipper, LFPress
 				LF.Fire
 				FlipperHoldCoilLeft SoundOn, LeftFlipper
 				'over ramp flipper
 				if StagedFlipperMod = 0 then
 					Flipper1.RotateToEnd
-'					SoundFlipperUpAttackLeft Flipper1
-'					RandomSoundFlipperUpLeft Flipper1
 					If Flipper1.currentangle < Flipper1.endangle + ReflipAngle Then
 						'Play partial flip sound and stop any flip down sound
 						StopAnyFlipperUpperLeftDown()
@@ -3977,8 +3962,6 @@ Sub Table1_KeyDown(ByVal Keycode)
 				'underpf left flipper
 				If bPortalFlippersEnabled Then 
 					LeftFlipperMini.RotateToEnd
-'					SoundFlipperUpAttackLeft LeftFlipperMini
-'					RandomSoundFlipperUpLeft LeftFlipperMini
 					If LeftFlipperMini.currentangle < LeftFlipperMini.endangle + ReflipAngle Then
 						'Play partial flip sound and stop any flip down sound
 						StopAnyFlipperUpperLeftDown()
@@ -3990,13 +3973,10 @@ Sub Table1_KeyDown(ByVal Keycode)
 				end if
 
 				If leftflipper.currentangle < leftflipper.endangle + ReflipAngle Then 
-'					RandomSoundReflipUpLeft LeftFlipper
 					'Play partial flip sound and stop any flip down sound
 					StopAnyFlipperLowerLeftDown()
 					RandomSoundFlipperLowerLeftReflipDOF LeftFlipper, 101, DOFOn
 				Else 
-'					SoundFlipperUpAttackLeft LeftFlipper
-'					RandomSoundFlipperUpLeft LeftFlipper
 					'Play full flip sound
 					If BallNearLF = 0 Then
 						RandomSoundFlipperLowerLeftUpFullStrokeDOF LeftFlipper, 101, DOFOn
@@ -4016,23 +3996,11 @@ Sub Table1_KeyDown(ByVal Keycode)
 			end if
 
 			If keycode = RightFlipperKey and bFlippersEnabled Then 
-'				RightF = 1 : Flipper_Info = 0
-
-'				DOF 102,1
-
 				If skillshot=0 Then
 					if Not CurrentMission = 5 And Not WizardPhase = 3 then
 						RotateLaneLightsRight
 					end if
 				End If
-
-				if EobBonusCounter > 2 then 
-					if HasPuP then
-						EobBonusCounter = 830 'skip EOBbonus counting PUP
-					else
-						EobBonusCounter = 530 'skip EOBbonus counting Flex
-					end if
-				end if
 
 				FlipperActivate RightFlipper, RFPress
 				RF.Fire
@@ -4040,8 +4008,6 @@ Sub Table1_KeyDown(ByVal Keycode)
 				'underpf right flipper
 				If bPortalFlippersEnabled Then 
 					RightFlipperMini.RotateToEnd
-'					SoundFlipperUpAttackRight RightFlipperMini
-'					RandomSoundFlipperUpRight RightFlipperMini
 
 					If RightFlipperMini.currentangle < RightFlipperMini.endangle + ReflipAngle Then
 						'Play partial flip sound and stop any flip down sound
@@ -4055,17 +4021,14 @@ Sub Table1_KeyDown(ByVal Keycode)
 				end if
 
 				If rightflipper.currentangle > rightflipper.endangle - ReflipAngle Then
-'					RandomSoundReflipUpRight RightFlipper
 					StopAnyFlipperLowerRightDown()
 					RandomSoundFlipperLowerRightReflipDOF RightFlipper, 102, DOFOn
 				Else 
-'					SoundFlipperUpAttackRight RightFlipper
-'					RandomSoundFlipperUpRight RightFlipper
 					'Play full flip sound
-					If BallNearLF = 0 Then
+					If BallNearRF = 0 Then
 						RandomSoundFlipperLowerRightUpFullStrokeDOF RightFlipper, 102, DOFOn
 					End IF
-					If BallNearLF = 1 Then
+					If BallNearRF = 1 Then
 						Select Case Int(Rnd*2)+1
 							Case 1 : RandomSoundFlipperLowerRightUpDampenedStrokeDOF RightFlipper, 102, DOFOn
 							Case 2 : RandomSoundFlipperLowerRightUpFullStrokeDOF RightFlipper, 102, DOFOn
@@ -4082,17 +4045,17 @@ Sub Table1_KeyDown(ByVal Keycode)
 				ShootGun true
 			End If
 
-			If KeyCode=RightMagnaSave or KeyCode = LockBarKey Then
+			If (KeyCode=RightMagnaSave or KeyCode = LockBarKey) and bFlippersEnabled Then
 				DropLoopWall true
 				ShootGun true
 				RightMagnaTimer.Enabled = True
 			end if
 
-			if Keycode=LeftMagnaSave Then
+			if Keycode=LeftMagnaSave and bFlippersEnabled Then
 				LeftMagnaTimer.Enabled = True
 			end if
 
-			If Keycode=LeftFlipperKey Or KeyCode=RightFlipperKey Then 
+			If (Keycode=LeftFlipperKey Or KeyCode=RightFlipperKey) and bFlippersEnabled Then 
 				if WizardPhase <> 1 then
 					DropLoopWall true
 				end if
@@ -16851,7 +16814,7 @@ End Sub
 Sub BallGuideOrbitLeft_Entrance_UnHit()
 	If Activeball.vely < 0 Then
 		'Ball rolls upwards
-debug.print "Ball rolls upwards"
+'debug.print "Ball rolls upwards"
 		dim finalspeed
 		finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
 		'debug.print "BallGuideOrbitLeft_Entrance_UnHit - finalspeed: " & finalspeed
@@ -16864,7 +16827,7 @@ debug.print "Ball rolls upwards"
 	End If
 	If Activeball.vely > 0 Then
 		'Ball rolls downwards
-debug.print "Ball rolls downwards"
+'debug.print "Ball rolls downwards"
 		StopAnyMetalBallGuideOrbitRoll()
 	End If
 End Sub
@@ -19906,7 +19869,7 @@ Dim EobBonusCounter
 Dim TOTALEOBBONUS
 Dim TOTALEOBBONUSvisible
 dim CurrentMissionCount
-Dim SkipEnd
+'Dim SkipEnd
 Sub DMD_EOB_Bonus
 
 	EobBonusCounter = EobBonusCounter + 1
@@ -19925,7 +19888,7 @@ Sub DMD_EOB_Bonus
 	if HasPuP then
 		Select Case EobBonusCounter
 			Case    2 : StopVideosPlaying
-						SkipEnd=True
+'						SkipEnd=True
 						DMD_ShowImages "attract",1,500,-1,0
 						TOTALEOBBONUS = 0
 						TOTALEOBBONUS = TOTALEOBBONUS + (CurrentMissionCount * bonus_EOB_Missions )
@@ -20070,7 +20033,7 @@ Sub DMD_EOB_Bonus
 						puPlayer.LabelSet pDMD,"Multi", "10X",1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
 						End If
 			Case  830 : pDMDSetPage(pDMDBlank)
-						SkipEnd = False
+'						SkipEnd = False
 			Case  840: Score(currentplayer) = Score(currentplayer) + ( TOTALEOBBONUS * BonusMultiplier(CurrentPlayer) )
 						DMD_ShowText "TOTAL SCORE" ,1,FontWhite3,11,False,40,3000
 						PuPEvent(546)
@@ -21031,6 +20994,7 @@ end if
 
 dim TablesDir : TablesDir = GetTablesFolder
 
+
 dim bQRPairLoaded : bQRPairLoaded = false
 dim preloadClaimStarted : preloadClaimStarted = False
 
@@ -21783,7 +21747,7 @@ Debug.print "Scorbit Stop Session"
 		Dim QRFile:QRFile=TablesDir & "\" & dirQrCode
 		if bEnabled=False then Exit Sub 
 		resultStr = GetMsgHdr("https://" & domain, "/api/heartbeat/", "Authorization", "SToken " & sToken)
-		Debug.print "Heartbeat Resp:" & resultStr
+'Debug.print "Heartbeat Resp:" & resultStr
 		If VenueMachineID="" then 
 
 			if resultStr<>"" and Instr(resultStr, """unpaired"":true")=0 then 	' We Paired
@@ -22019,6 +21983,8 @@ Function GetTablesFolder()
     set GTF = nothing 
 End Function
 
+ScorbitExesCheck
+
 if Scorbitactive = 1 then 
 '	msgbox "doinit"
 '	if Scorbit.DoInit(2082, "PupOverlays", myVersion, "GRWvz-MP37P") then 	' Staging
@@ -22030,6 +21996,34 @@ if Scorbitactive = 1 then
 	End if 
 
 End if 
+
+' Checks that all needed binaries are available in correct place..
+Sub ScorbitExesCheck
+	dim fso
+	Set fso = CreateObject("Scripting.FileSystemObject")
+
+	If fso.FileExists(TablesDir & "\sToken.exe") then
+'		msgbox "Stoken.exe found at: " & TablesDir & "\sToken.exe"
+	else
+		msgbox "Stoken.exe NOT found at: " & TablesDir & "\sToken.exe Disabling Scorbit for now."
+		Scorbitactive = 0
+	end if
+
+	If fso.FileExists(TablesDir & "\sQRCode.exe") then
+'		msgbox "sQRCode.exe found at: " & TablesDir & "\sQRCode.exe"
+	else
+		msgbox "sQRCode.exe NOT found at: " & TablesDir & "\sQRCode.exe Disabling Scorbit for now."
+		Scorbitactive = 0
+	end if
+
+	If fso.FileExists(TablesDir & "\qrview.exe") then
+'		msgbox "qrview.exe found at: " & TablesDir & "\qrview.exe"
+	else
+		msgbox "qrview.exe NOT found at: " & TablesDir & "\qrview.exe Disabling Scorbit for now."
+		Scorbitactive = 0
+	end if
+
+end sub
 
 '*****************************************
 '	iaakki's	Blood Trails
@@ -23769,14 +23763,14 @@ If HasPuP=False then exit Sub
 End Sub
 
 'skip to total
-Sub SkiptoEndTotal
-If HasPuP=False then exit Sub
- If	SkipEnd = False then exit Sub
- If SkipEnd  = True Then
-  EobBonusCounter = 810
-  SkipEnd = False	
-End if
-End Sub
+'Sub SkiptoEndTotal
+'If HasPuP=False then exit Sub
+' If	SkipEnd = False then exit Sub
+' If SkipEnd  = True Then
+'  EobBonusCounter = 810
+'  SkipEnd = False	
+'End if
+'End Sub
 
 'coin
 
