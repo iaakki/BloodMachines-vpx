@@ -63,20 +63,43 @@
 '1.33 heartbeatDM - hasPuP checks to all related subs
 '1.34 Frank  - MX Dof additions
 '1.35 iaakki - Error messages shown if Scorbit binaries are not found in correct folders, flipkey and other flip ssf handling tweaks. EOB skip redone, 
+'1.36-37 - various pup related edits by HeartbeatMD and Frank
+'1.38 iaakki - Scorbit player numbering fixed and tested to work with 2 players, Additional DOFs for flips removed, SlingSpin defaulted off, minor bugfix to wizard
+'			   SSF shaker added with DOF options, all rubber sounds redone
+'1.40 iaakki - New baked metalwall
+'1.41 Frank -	MX Dof changes for  the MODES and MB
+'1.42 iaakki - 	UnderPF DTs redone with Rothbauer style DTs
+'1.44 iaakki - 	Hatch flasher tuned for VR. VR PUP DMD support created and reworked to play nice with flex still. It is all done a bit incorrectly 
+'				as we should be modifying VRBGSpeaker image only; not the backbox. This must be reworked one more time.
+'1.45 iaakki - Half of the SSF sounds redone, underpf bug fixed
+'1.46 iaakki - bug fixes, ball rebound swapped, some sounds removed
+'1.47 iaakki - SSF sounds redone
+'1.48 iaakki - Plunger material fix one more time, VR PUP DMD speaker grill redone, TargetCockpit sound change, underpf DT sounds fixed, song playback stutter 
+'			   tested with delayed start. The problem comes from pupplayer side. If I disable audios from VLC player, the stutter disappears.
+'1.49 iaakki - Wizard ending fixed, MimaTargetBig threshold increased slightly, ramp reflection fix, wizardphase4 ball rattle reduced
+'1.50 iaakki - ssf and other sound balancing
+'1.51 iaakki - Possible fix to game stuttering on song change when puppack is in use.
+'1.53 iaakki - VR tested  on 10.8 #814. Room lighting baked again and added with GI colors and levels
+'1.54 heartbeatDM - Attract and Game over attract Pup, Right flipper Skip Pup attract sequence, Lock Font Size
+'RC1 iaakki - some fixes with positions. VRRoom platform added and floor lighting redone.
+'RC2 leojreimroc - Fixes to VR Backglass and BG flashers 4-6 redone 
+'RC3 iaakki - Fix floor effects to not appear without vrroom, scorbit fixed one more time, qrview binary updated
+'RC4 iaakki - Music player fixed, platform added to vr collection, floor height adjusted
+'RC5 iaakki - Fixed EB handling in wizard, InsertBlooms balanced and added as option, slight tweak to vpx 10.8 hatch, wizard tester ON 
 
-'todo: 
-' - ssf changes mostly done, but fine tuning needed to various areas.
-'   - New wire ramp sounds are not looping, is it ok?
-'   - Is SSF sounds for flips really disabled when using DOF?
-'   - Rubbers, shaker, some minor SSF tweaks
-' - VR backglass for pupdmd
 
+
+'Minumum VPX versions to use:
+' Desktop and cabinet: 	64bit 10.7.3
+' VR: 					64bit 10.8 rev814
 
 
 Option Explicit
 Randomize
 
-
+'**************************
+'  FlexDmd or PupDmd
+'**************************
 	
 Const HasPuP = false  ' False=FlexDMD (default) , True=PUPDMD
 
@@ -87,7 +110,6 @@ Const HasPuP = false  ' False=FlexDMD (default) , True=PUPDMD
 dim PuPDMDDriverType: PuPDMDDriverType=2   ' 0=LCD DMD, 1=RealDMD 2=FULLDMD (large/High LCD)
 dim useRealDMDScale : useRealDMDScale=1    ' 0 or 1 for RealDMD scaling.  Choose which one you prefer.
 dim useDMDVideos    : useDMDVideos=true   ' true or false to use DMD splash videos.
-Dim pGameName       : pGameName="bloodmach"  'pupvideos foldername, probably set to cGameName in realworld
 
 
 '*****************************************************************************************************************************************
@@ -97,11 +119,19 @@ Dim pGameName       : pGameName="bloodmach"  'pupvideos foldername, probably set
 '///////////////////////-----VR Room-----///////////////////////
 Const VRRoom = 0					'0 - VR Room off, 1 - 360 Room, 2 - Minimal Room, 3 - Ultra Minimal
 
+dim pGameName
+if Not HasPuP then	'flex
+	pGameName = "BloodMachines"  'pupvideos foldername, probably set to cGameName in realworld
+else
+	pGameName = "bloodmach"  'pupvideos foldername, probably set to cGameName in realworld
+end if
+
+
 '/////////////////////-----Scorbit Options-----////////////////////
 
-ScorbitActive				= 1		' Is Scorbit Active	
+          ScorbitActive		    = 0		' Is Scorbit Active	
 Const     ScorbitShowClaimQR	= 1 	' If Scorbit is active this will show a QR Code in the bottom left on ball 1 that allows player to claim the active player from the app
-'Const     ScorbitClaimSmall		= 0 	' Make Claim QR Code smaller for high res backglass 
+'Const     ScorbitClaimSmall	= 0 	' Make Claim QR Code smaller for high res backglass 
 Const     ScorbitUploadLog		= 1 	' Store local log and upload after the game is over 
 Const     ScorbitAlternateUUID  = 0 	' Force Alternate UUID from Windows Machine and saves it in VPX Users directory (C:\Visual Pinball\User\ScorbitUUID.dat)
 
@@ -127,12 +157,14 @@ Const AmbientBallShadowOn = 1		'0 = Static shadow under ball ("flasher" image, l
 
 Const FlasherBloomsEnabled = true	'true/false: Enabled and disables FlasherBlooms. Disable for performance
 Const PupilLatency = True			'true/false: Enabled and disables Pupil Latency lighting feature.  
+Const bInsertBlooms = True			'true/false: Enabled and disables insert blooms lighting feature.  
+Dim Insert_Bloom_x_GIon : Insert_Bloom_x_GIon = 0.05	'Higher value, higher bloom
 
 Const ballbrightnessMax = 170		'ball max brightness 0-255
 Const ballbrightnessMin = 100		'ball min brightness 0-255
 
 Const OptionWarmGi = False          'Set true for a bit more warm default GI
-const bSlingSpin = true 			'Sling corner spin feature. This is a random thing that happens with pinball.
+const bSlingSpin = false 			'Sling corner spin feature. This is a random thing that happens with pinball.
 
 Const ResetHighscores = False	'Set to True, start game , and close it down and put this back on False !!!
 
@@ -178,7 +210,7 @@ Function GetMusicFolder()
     set GMF = nothing 
 End Function
 
-'msgBox GetMusicFolder 
+
 
 '*****************************************************************************************************************************************
 ' Script Options
@@ -469,6 +501,9 @@ Dim HighScoreName(4)
 Dim GunTargetScore(4)
 Dim BumperHits(4)
 Dim BumperHitsPup(4)
+Dim BumperThousandPup(4)
+Dim BumperTwentyThousandPup(4)
+Dim BumperscoringPup(4)
 Dim Mission1Points(4)
 Dim Mission2Points(4)
 Dim Mission3Points(4)
@@ -493,6 +528,9 @@ Dim BallsInHole
 Dim bGameInPlay
 Dim bOnTheFirstBall
 Dim bMultiBallMode
+Dim PupBumperTracy
+Dim PupBumpertenthousand
+Dim PupBumpersuperjets
 Dim bMultiballReady
 Dim bCoreyMBOngoing
 Dim bTracyMBOngoing
@@ -681,6 +719,7 @@ Sub SetGiColor ( newcol,newcolfull )
 		xx.color = newcol
 		xx.colorfull = newcolfull
 	Next
+	pTunnel_light.color = newcol
 End Sub
 
 Dim GI_Brightness(100)
@@ -733,9 +772,6 @@ End Sub
 '  Insert Blooms
 '*****************************************************************************************************************************************
 Dim Insert_Blooms(100)
-Dim Insert_Bloom_x_GIon
-Insert_Bloom_x_GIon = 0.1
-
 
 
 Sub Init_Insert_Blooms
@@ -882,6 +918,7 @@ Sub PlayerLights_ResetAll
 		DTRaise 1
 		DTRaise 2
 		DTRaise 3
+		RandomSoundDropTargetLeft(TargetScavenge2p)
 
 	next
 End Sub
@@ -985,6 +1022,7 @@ Sub PlayerLights_ResetInserts ' turn them all off
 	DTRaise 1
 	DTRaise 2
 	DTRaise 3
+	RandomSoundDropTargetLeft(TargetScavenge2p)
 
 End Sub
 
@@ -1263,7 +1301,7 @@ Sub Table1_Init
 	With plungerIM
 		.InitImpulseP swplunger, IMPowerSetting, IMTime
 		.Random 1.5
-		.InitExitSnd SoundFX("fx_kicker", DOFContactors), SoundFX("fx_solenoid", DOFContactors)
+		.InitExitSnd SoundFX("fx-kickout", DOFContactors), SoundFX("fx_solenoid", DOFContactors)
 		.CreateEvents "plungerIM"
 	End With
 
@@ -1307,6 +1345,9 @@ Sub Table1_Init
 	bBallSaverActive = False
 	bBallSaverReady = False
 	bMultiBallMode = False
+	PupBumperTracy = False
+	PupBumpertenthousand = False
+	PupBumpersuperjets = False
 	bMultiballReady = False
 	bCoreyMBOngoing = False
 	bTracyMBOngoing = False
@@ -1336,8 +1377,6 @@ Sub Table1_Init
 
 	if ScorbitActive = 1 then vpmtimer.addtimer 2000, "showQRPairImage '"
 
-PUPInit
-
 	if Credits > 0 then DOF 122,1 'start button light
 
 	ResetMimaTargets
@@ -1350,7 +1389,7 @@ PUPInit
 	if StartupTune then vpmtimer.addtimer 2000, "PlaySong 5'"
 
 	vpmtimer.addtimer 3000, "startb2s 4'"
-
+PUPInit
 End Sub
 
 Sub Table1_Exit
@@ -3856,7 +3895,7 @@ sub SkiptoEndTotal
 	elseif Not HasPuP and (EobBonusCounter > 2 and EobBonusCounter < 499) then
 		EobBonusCounter = 500 'skip EOBbonus counting Flex
 	end if
-debug.print "skip to: " & EobBonusCounter
+'debug.print "skip to: " & EobBonusCounter
 	
 end sub
 
@@ -3893,7 +3932,9 @@ Sub Table1_KeyDown(ByVal Keycode)
 		bOpenTopGate = true
 	end if
 
-
+	If keycode = RightFlipperKey Then
+		ScrollAttract
+	End if
 
 	If keycode = PlungerKey Then
 		'debug.print "plunger" & lfpress & " " & bOpenTopGate
@@ -3924,10 +3965,11 @@ Sub Table1_KeyDown(ByVal Keycode)
 					If Flipper1.currentangle < Flipper1.endangle + ReflipAngle Then
 						'Play partial flip sound and stop any flip down sound
 						StopAnyFlipperUpperLeftDown()
-						RandomSoundFlipperUpperLeftReflipDOF Flipper1, 105, DOFOn
-					Else
-						'Play full flip sound
-						RandomSoundFlipperUpperLeftUpFullStrokeDOF Flipper1, 105, DOFOn
+'						RandomSoundFlipperUpperLeftReflipDOF Flipper1, 105, DOFOn
+						RandomSoundFlipperUpperLeftReflip Flipper1
+vr						'Play full flip sound
+'						RandomSoundFlipperUpperLeftUpFullStrokeDOF Flipper1, 105, DOFOn
+						RandomSoundFlipperUpperLeftUpFullStroke Flipper1
 					End If	
 				end if
 			end if
@@ -3936,7 +3978,7 @@ Sub Table1_KeyDown(ByVal Keycode)
 '				LeftF = 1 : Flipper_Info = 0
 				
 '				DOF 101,1
-
+'				flash2 1
 				If skillshot=0 Then
 					if Not CurrentMission = 5 And Not WizardPhase = 3 then
 						RotateLaneLightsLeft
@@ -3945,17 +3987,19 @@ Sub Table1_KeyDown(ByVal Keycode)
 
 				FlipperActivate LeftFlipper, LFPress
 				LF.Fire
-				FlipperHoldCoilLeft SoundOn, LeftFlipper
+'				FlipperHoldCoilLeft SoundOn, LeftFlipper
 				'over ramp flipper
 				if StagedFlipperMod = 0 then
 					Flipper1.RotateToEnd
 					If Flipper1.currentangle < Flipper1.endangle + ReflipAngle Then
 						'Play partial flip sound and stop any flip down sound
 						StopAnyFlipperUpperLeftDown()
-						RandomSoundFlipperUpperLeftReflipDOF Flipper1, 105, DOFOn
+'						RandomSoundFlipperUpperLeftReflipDOF Flipper1, 105, DOFOn
+						RandomSoundFlipperUpperLeftReflip Flipper1
 					Else
 						'Play full flip sound
-						RandomSoundFlipperUpperLeftUpFullStrokeDOF Flipper1, 105, DOFOn
+'						RandomSoundFlipperUpperLeftUpFullStrokeDOF Flipper1, 105, DOFOn
+						RandomSoundFlipperUpperLeftUpFullStroke Flipper1
 					End If	
 				end if
 
@@ -3965,10 +4009,12 @@ Sub Table1_KeyDown(ByVal Keycode)
 					If LeftFlipperMini.currentangle < LeftFlipperMini.endangle + ReflipAngle Then
 						'Play partial flip sound and stop any flip down sound
 						StopAnyFlipperUpperLeftDown()
-						RandomSoundFlipperUpperLeftReflipDOF LeftFlipperMini, 103, DOFOn
+'						RandomSoundFlipperUpperLeftReflipDOF LeftFlipperMini, 103, DOFOn
+						RandomSoundFlipperUpperLeftReflip LeftFlipperMini
 					Else
 						'Play full flip sound
-						RandomSoundFlipperUpperLeftUpFullStrokeDOF LeftFlipperMini, 103, DOFOn
+'						RandomSoundFlipperUpperLeftUpFullStrokeDOF LeftFlipperMini, 103, DOFOn
+						RandomSoundFlipperUpperLeftUpFullStroke LeftFlipperMini
 					End If	
 				end if
 
@@ -3996,6 +4042,7 @@ Sub Table1_KeyDown(ByVal Keycode)
 			end if
 
 			If keycode = RightFlipperKey and bFlippersEnabled Then 
+'				flash6 1
 				If skillshot=0 Then
 					if Not CurrentMission = 5 And Not WizardPhase = 3 then
 						RotateLaneLightsRight
@@ -4004,7 +4051,7 @@ Sub Table1_KeyDown(ByVal Keycode)
 
 				FlipperActivate RightFlipper, RFPress
 				RF.Fire
-				FlipperHoldCoilRight SoundOn, RightFlipper
+'				FlipperHoldCoilRight SoundOn, RightFlipper
 				'underpf right flipper
 				If bPortalFlippersEnabled Then 
 					RightFlipperMini.RotateToEnd
@@ -4012,10 +4059,12 @@ Sub Table1_KeyDown(ByVal Keycode)
 					If RightFlipperMini.currentangle < RightFlipperMini.endangle + ReflipAngle Then
 						'Play partial flip sound and stop any flip down sound
 						StopAnyFlipperUpperLeftDown()
-						RandomSoundFlipperUpperLeftReflipDOF RightFlipperMini, 104, DOFOn
+'						RandomSoundFlipperUpperLeftReflipDOF RightFlipperMini, 104, DOFOn
+						RandomSoundFlipperUpperLeftReflip RightFlipperMini
 					Else
 						'Play full flip sound
-						RandomSoundFlipperUpperLeftUpFullStrokeDOF RightFlipperMini, 104, DOFOn
+'						RandomSoundFlipperUpperLeftUpFullStrokeDOF RightFlipperMini, 104, DOFOn
+						RandomSoundFlipperUpperLeftUpFullStroke RightFlipperMini
 					End If
 
 				end if
@@ -4184,7 +4233,8 @@ Sub Table1_KeyUp(ByVal keycode)
 			Flipper1.RotateToStart
 '			RandomSoundFlipperDownLeft Flipper1
 			If Flipper1.currentangle < Flipper1.startAngle - 5 Then
-				RandomSoundFlipperUpperLeftDownDOF Flipper1, 105, DOFOff
+'				RandomSoundFlipperUpperLeftDownDOF Flipper1, 105, DOFOff
+				RandomSoundFlipperUpperLeftDown Flipper1
 			End If
 			FlipperLeftUpperHitParm = FlipperUpSoundLevel
 		end if
@@ -4193,13 +4243,14 @@ Sub Table1_KeyUp(ByVal keycode)
 	If keycode = LeftFlipperKey Then 
 '		DOF 101,0
 		FlipperDeActivate LeftFlipper, LFPress
-		FlipperHoldCoilLeft SoundOff, LeftFlipper
+'		FlipperHoldCoilLeft SoundOff, LeftFlipper
 
 		if StagedFlipperMod = 0 then
 			Flipper1.RotateToStart
 '			RandomSoundFlipperDownLeft Flipper1
 			If Flipper1.currentangle < Flipper1.startAngle - 5 Then
-				RandomSoundFlipperUpperLeftDownDOF Flipper1, 105, DOFOff
+'				RandomSoundFlipperUpperLeftDownDOF Flipper1, 105, DOFOff
+				RandomSoundFlipperUpperLeftDown Flipper1
 			End If
 			FlipperLeftUpperHitParm = FlipperUpSoundLevel
 		end if
@@ -4209,7 +4260,8 @@ Sub Table1_KeyUp(ByVal keycode)
 		If bPortalFlippersEnabled Then
 '			RandomSoundFlipperDownLeft LeftFlipperMini
 			If LeftFlipperMini.currentangle < LeftFlipperMini.startAngle - 5 Then
-				RandomSoundFlipperUpperLeftDownDOF LeftFlipperMini, 103, DOFOff
+'				RandomSoundFlipperUpperLeftDownDOF LeftFlipperMini, 103, DOFOff
+				RandomSoundFlipperUpperLeftDown LeftFlipperMini
 			End If
 '			FlipperLeftUpperHitParm = FlipperUpSoundLevel
 		end if
@@ -4240,7 +4292,8 @@ Sub Table1_KeyUp(ByVal keycode)
 
 		If bPortalFlippersEnabled Then
 			If RightFlipperMini.currentangle < RightFlipperMini.startAngle - 5 Then
-				RandomSoundFlipperUpperLeftDownDOF RightFlipperMini, 104, DOFOff
+'				RandomSoundFlipperUpperLeftDownDOF RightFlipperMini, 104, DOFOff
+				RandomSoundFlipperUpperLeftDown RightFlipperMini
 			End If
 		end if
 
@@ -4251,7 +4304,7 @@ Sub Table1_KeyUp(ByVal keycode)
 '		FlipperRightHitParm = FlipperUpSoundLevel
 
 		RightFlipper.RotateToStart
-		FlipperHoldCoilRight SoundOff, RightFlipper
+'		FlipperHoldCoilRight SoundOff, RightFlipper
 		If RightFlipper.currentangle > RightFlipper.startAngle + 5 Then
 			RandomSoundFlipperLowerRightDownDOF RightFlipper, 102, DOFOff
 		End If	
@@ -4287,7 +4340,8 @@ End Sub
 
 
 Sub RightMagnaTimer_Timer
-
+	AwardExtraBall
+	AwardExtraBall
 	cLightMission1.state = 1
 	cLightMission2.state = 1
 	cLightMission3.state = 1
@@ -4494,7 +4548,13 @@ sub CaptiveTrigger_unhit
 end sub
 'TargetCockpit is now the metal wire that holds the captive ball
 Sub TargetCockpit_hit
-	MetalWireBallGuideHit
+'	MetalWireBallGuideHit
+	'4.5.17
+	Select Case Int(Rnd*3)+1
+		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_4"), Vol(ActiveBall) * MetalImpactSoundFactor * 2	'Just to piss of Dan
+		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_5"), Vol(ActiveBall) * MetalImpactSoundFactor * 2
+		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_17"), Vol(ActiveBall) * MetalImpactSoundFactor * 2
+	end Select
 End Sub
 
 dim CockpitLightLvl, CockpitLightLvlTarget
@@ -4655,7 +4715,7 @@ sub TracyTimer_timer
 		'PlaySoundAt "plastichit", Primitive019
 		'PlaySound "EFX_alert3"
 		'PlaySoundAt "plastichit", Primitive019
-		PlaySoundAtLevelStatic "EFX_alert3", 0.1, Primitive019
+		PlaySoundAtLevelStatic "EFX_alert2", 0.05, Primitive019
 		TracySoundCounter = 30
 
 		ptracyCross.visible = true
@@ -4667,17 +4727,21 @@ sub TracyTimer_timer
 
 	if TracyTargetLocked > 10 And TracyTargetLocked < 30 Then
 		TracySoundCounter = TracySoundCounter - 0.3
-		DOF 152,0
+'		DOF 152,0
+		SoundShakerDOF soundoff, dofoff
 	elseif TracyTargetLocked > 30 And TracyTargetLocked < 60 Then
 		TracySoundCounter = TracySoundCounter - 0.8
-		DOF 152,0
+'		DOF 152,0
+		SoundShakerDOF soundoff, dofoff
 	elseif TracyTargetLocked > 60 And TracyTargetLocked < 90 Then
 		TracySoundCounter = TracySoundCounter - 1.6
-		DOF 152,1
+'		DOF 152,1
+		SoundShakerDOF soundon, dofon
 		startB2S 6
 	elseif TracyTargetLocked > 90 And TracyTargetLocked < 99 Then
 		TracySoundCounter = TracySoundCounter - 2.4
-		DOF 152,1
+'		DOF 152,1
+		SoundShakerDOF soundon, dofon
 		startB2S 6
 	end if
 
@@ -4688,7 +4752,8 @@ sub TracyTimer_timer
 		vpmtimer.addtimer 500, "PlaySound ""SPC_tracy_anything_broken"",0,CalloutVol,0,0,1,1,1 '"
 
 		EndDoubleScoring
-		DOF 152,0
+'		DOF 152,0
+		SoundShakerDOF soundoff, dofoff
 	end if
 	
 
@@ -4890,7 +4955,7 @@ WizardPhase3DrainCount = 3
 Sub KickerDrain_Hit
 	WriteToLog "KickerDrain_Hit", " "
     SwitchWasHit("UnderKicker")
-	RandomSoundTroughDrain KickerDrain
+	RandomSoundOutholeHit KickerDrain
 
 	CounterBallSearch = -10
 	'debug.print "kicker drain hit"
@@ -4965,6 +5030,7 @@ Sub ScavengeKicker_Hit
 			DTRaise 1
 			DTRaise 2
 			DTRaise 3
+			RandomSoundDropTargetLeft(TargetScavenge2p)
 			WriteToLog "ScavangeKicker","Light 1 Solid"
 			cLightMystery1.state = 1
 			DMDMystery=1
@@ -5163,8 +5229,8 @@ sub ShipCannonKicker_Hit
 		' fixing add blinking and some sound
 		AudioCallout "extra ball"
 		AwardExtraBall
-		cLightShootAgain1.state=1 ' fixing add more blinking lightsequencer
-		cLightShootAgain2.state=1
+'		cLightShootAgain1.state=1 ' fixing add more blinking lightsequencer
+'		cLightShootAgain2.state=1
 		ShipCannonKicker.timerinterval=1500
 	End If
 	
@@ -5216,6 +5282,7 @@ Sub swCloseGunTrigger_hit
 	end if
 	WireRampOff
 	WireRampOn False 'Wire Ramp
+	PlaySoundAtLevelStatic (Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_1"), RightPlasticRampHitsSoundLevel, swCloseGunTrigger' : Debug.print Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_1"
 	SwitchWasHit("swCloseGunTrigger")
 End Sub
 
@@ -5627,6 +5694,13 @@ triang4x = triang4.x:triang4y = triang4.y:triang5x = triang5.x:triang5y = triang
 dim hatch_phase, hatch_open
 hatch_phase = 1
 
+if VersionMinor => 8 Then			'hatch is too bright if version 10.8 in use
+'	msgbox "10.8"
+	Hatchflasher001.AddBlend = false
+	Hatchflasher001.opacity = 90
+	gi003.intensity = 0
+end if
+
 sub hatch(enabled)
 	if enabled then
 		triang1.blenddisablelighting = 100
@@ -5646,7 +5720,7 @@ sub hatch(enabled)
 			if typename(xx) = "Wall" Then xx.SideVisible = True
 			xx.visible=True
 		Next
-		flasher001.visible=0
+		Hatchflasher001.visible=0
 	else
 		triang1.blenddisablelighting = 10
 		triang2.blenddisablelighting = 10
@@ -5695,7 +5769,7 @@ sub hatchtimer_timer
 				Next
 				For each xx in underPFclights : xx.state=False : Next
 
-				flasher001.visible=True
+				Hatchflasher001.visible=True
 
 			End If
 		End If
@@ -6091,7 +6165,7 @@ Sub swLeftOrbTrigger2_hit
 	WriteToLog "swLeftOrbTrigger2_hit", ""
 
 	'fleep
-	BallGuideOrbitLeft_Roll_Down()
+'	BallGuideOrbitLeft_Roll_Down()
 
 	If SwitchRecentlyHit("swLeftOrbTrigger1") Then
 		DOF 136,2 'left orbit
@@ -6175,9 +6249,9 @@ Sub swRightOrbTrigger2_hit
 	WriteToLog "swRightOrbTrigger2_hit", ""
 
 	'fleep sounds
-	BallGuideOrbitRight_Roll_Up()
-	BallGuideOrbitRight_Roll_Down()
-	StopMetalRollWhenBallRollsSlowFromShooter = 1
+'	BallGuideOrbitRight_Roll_Up()
+'	BallGuideOrbitRight_Roll_Down()
+'	StopMetalRollWhenBallRollsSlowFromShooter = 1
 
 	If SwitchRecentlyHit("swRightOrbTrigger1") Then
 		DOF 137,2 'right orbit
@@ -6257,6 +6331,7 @@ sub swSkyRamp_hit
 	CheckGaldorFinalHit
 	WireRampOff
 	WireRampOn True 'Pastic Ramp
+	PlaySoundAtLevelStatic (Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_2"), RightPlasticRampHitsSoundLevel, swSkyRamp' : Debug.print Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_2"
 	SwitchWasHit("swSkyRamp")
 end Sub
 
@@ -6305,10 +6380,11 @@ Sub swMainRamp_hit
 End Sub
 
 sub FlickTopFlip
-	flipper1.rotatetoend:RandomSoundFlipperUpperLeftUpFullStrokeDOF flipper1, 105, DOFOn
-	vpmtimer.addtimer 80, "flipper1.rotatetostart:RandomSoundFlipperUpperLeftDownDOF Flipper1, 105, DOFOff '"
-	vpmtimer.addtimer 160, "flipper1.rotatetoend:RandomSoundFlipperUpperLeftUpFullStrokeDOF flipper1, 105, DOFOn '"
-	vpmtimer.addtimer 240, "flipper1.rotatetostart:RandomSoundFlipperUpperLeftDownDOF Flipper1, 105, DOFOff '"
+	flipper1.rotatetoend
+	RandomSoundFlipperUpperLeftUpFullStroke flipper1
+	vpmtimer.addtimer 80, "flipper1.rotatetostart:RandomSoundFlipperUpperLeftDown Flipper1 '"
+	vpmtimer.addtimer 160, "flipper1.rotatetoend:RandomSoundFlipperUpperLeftUpFullStroke flipper1 '"
+	vpmtimer.addtimer 240, "flipper1.rotatetostart:RandomSoundFlipperUpperLeftDown Flipper1 '"
 	bDoTopFlipTip = False
 end sub
 
@@ -6335,6 +6411,7 @@ end sub
 Sub swRampRoll1_Hit
 	WriteToLog "swRampRoll1_Hit", ""
 	WireRampOff
+	PlaySoundAtLevelStatic (Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_5"), RightPlasticRampHitsSoundLevel, swRampRoll1' : Debug.print Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_5"
 	if SwitchRecentlyHit("swRampRoll1") Then 
 		WireRampOn True 'Pastic Ramp
 	Else
@@ -6347,6 +6424,7 @@ End Sub
 Sub swRampRoll2_Hit
 	WriteToLog "swRampRoll2_Hit", ""
 	WireRampOff
+	PlaySoundAtLevelStatic (Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_1"), RightPlasticRampHitsSoundLevel, swRampRoll2' : Debug.print Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_1"
 	WireRampOn False 'Wire Ramp
 	SwitchWasHit("swRampRoll2")
 End Sub
@@ -6685,7 +6763,7 @@ Sub StartMimaMB
 		bAutoPlunger = True
 		AddScore score_StartMimaMB
 		PuPEvent(550)
-		DOF 550, DOFPulse
+		DOF 550, DOFOn
 		MBPUP = "3"
 		MimaMBloop
 		bMimaMBOngoing = True
@@ -6779,6 +6857,7 @@ Sub EndMimaMB
 	MBPUP = "4"
 	StopMimaMBPup
 	WriteToLog "EndMimaMB", ""
+	DOF 550, DOFOff
 	If cLightMimaMB.state = 2 then 
 		tEndMimaMB.interval = MBGraceTime
 		tEndMimaMB.enabled = True
@@ -6857,7 +6936,7 @@ Sub StartCoreyMB
 		'Start Corey MB
 		WriteToLog "Corey MB", "START"
 		PuPEvent(552)
-		DOF 552, DOFPulse
+		DOF 552, DOFOn
 		showMissionVideo = 45
 		bMultiBallMode = True
 		bCoreyMBOngoing = True
@@ -6931,6 +7010,7 @@ Sub EndCoreyMB
 	MBPUP = "6"
 	StopCoreyMBPup
 	WriteToLog "EndCoreyMB", ""
+	DOF 552, DOFOff
 	If cLightCoreyMB.state = 2 then
 		tEndCoreyMB.interval = MBGraceTime
 		tEndCoreyMB.enabled = True
@@ -7024,7 +7104,7 @@ Sub StartTracyMB
 		'Start Tracy MB
 		WriteToLog "Tracy MB", "START"
 		PuPEvent(554)
-		DOF 554, DOFPulse
+		DOF 554, DOFOn
 		MBPUP = "1"
 		TracyMBloop
 		showMissionVideo = 47
@@ -7112,6 +7192,7 @@ End Sub
 Sub EndTracyMB
 	MBPUP = "2"
 	WriteToLog "EndTracyMB", ""
+	DOF 554, DOFOff
 	If cLightTracyMB.state = 2 then 
 		tEndTracyMB.interval = MBGraceTime
 		tEndTracyMB.enabled = True
@@ -7171,10 +7252,12 @@ sub StartPhase1
 
 	WizardPhase = 1
 	bWizardMode = true
+	PuPevent(555)
+	DOF 555, DOFPulse
 	cLightMissionStart1.state = 0
 	gioff
+	if vrroom=1 then hexfloor.opacity = 1200 : hexfloor.visible = true
 	cLightKB1.uservalue = cLightKB1.state:cLightKB2.uservalue = cLightKB2.state
-	PuPEvent(556)
 	ScorbitBuildGameModes()
 
 	vpmtimer.addtimer 1500, "GaldorShade false : GaldorQ1 = ""Ya"" '"
@@ -7215,6 +7298,8 @@ dim TracyChangeHitCount : TracyChangeHitCount = 0
 sub StartTracyChange
 	WriteToLog "Wizard", "starttracychange"
 	if cTracyChange.state = 0 then	'initial call to sub
+		PuPEvent(556)
+		DOF 556, DOFPulse
 		WriteToLog "Wizard", "phase 1 tracy change"
 		cTracyChange.state = 1
 		ptracyCross.visible = true
@@ -7266,6 +7351,8 @@ sub StartPhase2
 	PlaySongLoop 10,121.54,131.65
 	GaldorReset=true
 	GaldorShade true
+	PuPEvent(460)
+	DOF 460, DOFPulse	
 
 	cTracyCross.BlinkInterval = 700
 	cTracyCross.state = 2
@@ -7283,9 +7370,7 @@ Sub CheckWizardOrbShot
 		WriteToLog "Wizard Orb shot", "Nice Shot!"
 		DOF 142,2 'MB wizard orb shot
 		AddScore score_WizardOrbShot
-		PuPEvent(560)
-		DOF 560, DOFPulse
-
+		
 		'DMD_ShowImages "jackpot",3,50,2000,0 ' jp fast blink
 
 
@@ -7297,6 +7382,36 @@ Sub CheckWizardOrbShot
 		WizardOrbShotCount = WizardOrbShotCount - 1
 		LS_AllLightsAndFlashers.Play SeqUpOn, 10, 1
 		AddScore score_WizardPhase2OrbShot
+
+		
+		if WizardOrbShotCount <=6 Then
+			PuPEvent(461)
+			DOF 461, DOFPulse
+		end if
+		If WizardOrbShotCount <=5 Then
+			PuPEvent(462)
+			DOF 462, DOFPulse
+		end if
+		If WizardOrbShotCount <=4 Then
+			PuPEvent(463)
+			DOF 463, DOFPulse
+		end if
+		If WizardOrbShotCount <=3 Then
+			PuPEvent(464)
+			DOF 464, DOFPulse
+		end if
+		If WizardOrbShotCount <=2 Then
+			PuPEvent(465)
+			DOF 465, DOFPulse
+		end if
+		If WizardOrbShotCount <=1 Then
+			PuPEvent(466)
+			DOF 466, DOFPulse
+		end if
+		If WizardOrbShotCount <=0 Then
+			PuPEvent(450)
+			DOF 450, DOFPulse
+		end if
 
 		if WizardOrbShotCount <= 0 Then
 			endPhase2
@@ -7310,6 +7425,7 @@ Sub CheckWizardOrbShot
 
 	End If
 End Sub
+
 
 sub endPhase2
     If Tilted Then Exit Sub
@@ -7351,6 +7467,8 @@ sub StartPhase3
 	cLightUnderPFShot1.state = 0
 	cLightUnderPFShot2.state = 0
 	cLightMissionStart1.State=0
+	PuPEvent(451)
+	Dof 451, DOFPulse
 
 	'LightPortalRoomShotsLeft 'moved to hatch routine
 
@@ -7358,8 +7476,6 @@ end sub
 
 reflPortalRight.blenddisablelighting = 20
 
-dim UnderPFShot1Counter : UnderPFShot1Counter = 0
-dim UnderPFShot2Counter : UnderPFShot2Counter = 0
 
 Sub CheckWizardUPFShot(nr)
     if tilted then exit sub
@@ -7368,6 +7484,8 @@ Sub CheckWizardUPFShot(nr)
 		If nr = 1 And cLightUnderPFShot1.state = 2 Then
 			cLightUnderPFShot1.state = 1
 			LightPortalRoomShotsRight
+		PuPEvent(452)
+		DOF 452, DOFPulse
 		end if
 		If nr = 2 And cLightUnderPFShot2.state = 2 Then 
 			cLightUnderPFShot2.state = 1
@@ -7391,7 +7509,8 @@ Sub CheckWizardUPFShot(nr)
 			showMissionVideo=66
 
 			bWizardModeUnderGame = true		'So that VUK2 will start spaceplatform
-
+			PuPEvent(453)
+			DOF 453, DOFPulse
 
 '			SetLightShot 1,1,"womanjp"
 '			SetLightShot 2,1,"womanjp"
@@ -7453,7 +7572,7 @@ Sub CheckWizardGaldorShot
 	If WizardPhase = 4 Then
 		WriteToLog "CheckWizardGaldorShot", "Nice Shot!"
 		DOF 142,2 'MB wizard jackpot
-		PuPEvent(560)
+		
 
 
 '		DMD_ShowImages "jackpot",3,50,2000,0 ' jp fast blink
@@ -7466,8 +7585,21 @@ Sub CheckWizardGaldorShot
 			GaldorShotCount = GaldorShotCount - 1
 			GaldorReset=true:GaldorQ1 = "fYe"
 		end If
-
+		if GaldorShotCount = 4 Then
+			PuPEvent(454)
+			DOF 454, DOFPulse
+		end if
+		if GaldorShotCount = 3 Then
+			PuPEvent(467)
+			DOF 467, DOFPulse
+		end if
+		if GaldorShotCount = 2 Then
+			PuPEvent(468)
+			DOF 468, DOFPulse
+		end if
 		if GaldorShotCount = 1 Then
+			PuPEvent(469)
+			DOF 469, DOFPulse
 			SetLightShot 3,0,"galdorshot"				'galdor shots
 			SetLightShot 4,1,"galdorshot"				'leave this on to assist player to shoot towards skyloop
 			SetLightShot 5,0,"galdorshot"
@@ -7518,6 +7650,8 @@ sub StartPhase5	'galdor defeated
 	ScorbitBuildGameModes()
 	cLightMissionStart1.state = 0
 	GaldorDefeated = 1
+	PuPEvent(455)
+	DOF 455, DOFPulse
 	StopSong
 	'release grabbed balls and let them drain
 	solMagnetGrab 0 : MimaMagnetOn False
@@ -7591,6 +7725,7 @@ sub EndWizard
 			cMimalock1.state=0
 			cMimalock2.state=0
 			GI_Color "white",1
+			if vrroom=1 then hexfloor.opacity = 0 : hexfloor.visible = false
 			ShowDust False
 			SetLightShot 2,0,"missionwizjp"
 			RestoreMBInsertStates
@@ -7600,6 +7735,9 @@ sub EndWizard
 			next
 			cLightMissionStart1.state = 0
 			GaldorDefeated = 0
+			GaldorShotCount = 5
+			finalGaldorHit = False
+			TracyChangeHitCount = 0
 			cTracyCross.state = 0
 			ptracyCross.visible = false
 			cTracyChange.state = 0
@@ -8012,6 +8150,7 @@ Sub MissionTimer_Timer
 				vpmtimer.addtimer 150, "apronnumber1.blenddisablelighting = 2 : apronnumber2.blenddisablelighting = 2 '"
 				if x = 1 Then
 					'end mission sounds etc
+					StopCoutdownPup
 					PlaySound "EFX_note01",0,CalloutVol,0,0,1,1,1
 				elseif x = 10 Then
 					PlaySound "SPC_10_left",0,CalloutVol,0,0,1,1,1
@@ -8021,6 +8160,8 @@ Sub MissionTimer_Timer
 					PlaySound "EFX_effect3",0,CalloutVol,0,0,1,1,1
 				end if
 				
+		
+
 			end if
 
 			apronnumber1.image = Int( x / 10 ) : x = x - Int(x/10)*10
@@ -8040,7 +8181,10 @@ Sub MissionTimer_Timer
 
 	if PointMultiplier > 1 then TracyTrackingTime = TracyTrackingTime + 1
 
-	if WizardPhase = 4 then GrabMagPeriodicRelease							'Release grabbed balls occasionally
+	if cOutholeKicker > 0 then RandomSoundOutholeKicker() : cOutholeKicker = 0
+
+'Disabling this, as it can bug out and stop grabbing any balls
+'	if WizardPhase = 4 then GrabMagPeriodicRelease							'Release grabbed balls occasionally
 
 	if bAttractMode then 
 		tAttractTime = tAttractTime + 1
@@ -8155,7 +8299,7 @@ sub CheckBallSearch
 			For b = 0 to UBound(nBOT)
 				if nBOT(b).z < -200 Then
 					'msgbox "Ball " &b& " in Narnia X: " & gBOT(b).x &" Y: "&gBOT(b).y & " Z: "&gBOT(b).z
-					debug.print "Move narnia ball ("& nBOT(b).x &" Y: "&nBOT(b).y & " Z: "&nBOT(b).z&") to center scoop"
+					debug.print "Move narnia ball (X: "& nBOT(b).x &" Y: "&nBOT(b).y & " Z: "&nBOT(b).z&") to right scoop"
 					nBOT(b).x = 786
 					nBOT(b).y = 1278
 					nBOT(b).z = -40
@@ -8386,7 +8530,7 @@ Sub StartMission1
 	AudioCallout "start mission 1"
 	PuPEvent(513)
 	PuPEvent(524)
-	DOF 513, DOFPulse
+	DOF 513, DOFOn
 	ModeTextDelay1.Enabled=True
 
 End Sub
@@ -8494,7 +8638,6 @@ Sub CheckBladerunnerShot(nr)
 			'todo add score + dmd thing
 			fontblink2=55
 			PuPEvent(877)
-			DOF 877, DOFPulse
 			GS.Enabled=True
 			AddScore GunTargetScorePerPlayer
 			ShowAddScoreText = FormatScore(GunTargetScorePerPlayer)
@@ -8531,7 +8674,9 @@ Sub EndMission1
 		CheckMissionCompleteAward
 		WriteToLog "Mission 1", "Completed"
 		PuPEvent(526)
+		DOF 513, DOFOff
 		PupMission= "Default"
+		Mtimercountdown= "Default"
 		StopVideosPlaying
 		showMissionVideo=5
 		MBPupCheck.Enabled=true
@@ -8539,7 +8684,9 @@ Sub EndMission1
 		cLightMission1.state=2
 		WriteToLog "Mission 1", "Not Completed"
 		PuPEvent(525)
+		DOF 513, DOFOff
 		PupMission= "Default"
+		Mtimercountdown= "Default"
 		StopVideosPlaying
 		showMissionVideo=3
 		MBPupCheck.Enabled=true
@@ -8581,7 +8728,7 @@ Sub StartMission2
 	AudioCallout "start mission 2"
 	PuPEvent(512)
 	PuPEvent(523)
-	DOF 512, DOFPulse
+	DOF 512, DOFOn
 	ModeTextDelay2.Enabled=True
 
 End Sub
@@ -8646,14 +8793,18 @@ Sub EndMission2
 		StopVideosPlaying
 		showMissionVideo=8
 		PuPEvent(526)
+		DOF 512, DOFOff
 		PupMission= "Default"
+		Mtimercountdown= "Default"
 	Else
 		cLightMission2.state=2
 		WriteToLog "Mission 2", "Not Completed"
 		StopVideosPlaying
 		showMissionVideo=9
 		PuPEvent(525)
+		DOF 512, DOFOff
 		PupMission= "Default"
+		Mtimercountdown= "Default"
 	End If
 End Sub
 
@@ -8687,7 +8838,7 @@ Sub StartMission3
 	PlaySong 7
 	PuPEvent(509)
 	PuPEvent(520)
-	DOF 509, DOFPulse
+	DOF 509, DOFOn
 	ModeTextDelay3.Enabled=True
 
 End Sub
@@ -8800,6 +8951,8 @@ Sub EndMission3
 		CheckMissionCompleteAward
 		WriteToLog "Mission 3", "Completed"
 		PuPEvent(526)
+		DOF 509, DOFOff
+		Mtimercountdown= "Default"
 		PupMission= "Default"
 		vpmtimer.addtimer 555, "StopVideosPlaying : showMissionVideo=12 '"
 	Else
@@ -8808,6 +8961,8 @@ Sub EndMission3
 		StopVideosPlaying
 		showMissionVideo=13
 		PuPEvent(525)
+		DOF 509, DOFOff
+		Mtimercountdown= "Default"
 		PupMission= "Default"
 	End If
 End Sub
@@ -8845,8 +9000,9 @@ Sub StartMission4
 	PlaySong 13
 	PuPEvent(508)
 	PuPEvent(519)
-	DOF 508, DOFPulse
+	DOF 508, DOFOn
 	ModeTextDelay4.Enabled=True
+
 End Sub
 
 
@@ -8956,6 +9112,8 @@ Sub EndMission4
 		CheckMissionCompleteAward
 		WriteToLog "Mission 4", "Completed"
 		PuPEvent(526)
+		DOF 508, DOFOff
+		Mtimercountdown= "Default"
 		PupMission= "Default"
 		vpmtimer.addtimer 555, "StopVideosPlaying : showMissionVideo=16 '"
 	Else
@@ -8964,6 +9122,8 @@ Sub EndMission4
 		StopVideosPlaying
 		showMissionVideo=17
 		PuPEvent(525)
+		DOF 508, DOFOff
+		Mtimercountdown= "Default"
 		PupMission= "Default"
 	End If
 End Sub
@@ -8995,29 +9155,40 @@ Sub StartMission5
 	pUnderPF.image = "under_pf1"
 	hatch true
 	PlaySong 9
-	hexfloor.blenddisablelighting = 10
+	if vrroom=1 then hexfloor.opacity = 1200 : hexfloor.visible = true
 	PuPEvent(511)
 	PuPEvent(522)
-	DOF 511, DOFPulse
+	DOF 511, DOFOn
 End Sub
 
-TargetVascan1.IsDropped = true
-TargetVascan2.IsDropped = true
-TargetVascan3.IsDropped = true
-TargetVascan4.IsDropped = true
-TargetVascan5.IsDropped = true
-TargetVascan6.IsDropped = true
+'TargetVascan1.IsDropped = true
+'DTDrop 4
+'TargetVascan2.IsDropped = true
+'TargetVascan3.IsDropped = true
+'TargetVascan4.IsDropped = true
+'TargetVascan5.IsDropped = true
+'TargetVascan6.IsDropped = true
+
+'SoundDropTarget_Release
 
 Sub LightPortalRoomShots
 	WriteToLog "LightPortalRoomShots", ""
 	VascanShotCount = 0
 
-							PlaySoundAt "DropTarget_Up", TargetVascan1 : TargetVascan1.IsDropped = false : cLightVascan1.state = 2
-	vpmtimer.addtimer 600, "PlaySoundAt ""DropTarget_Up"", TargetVascan2 : TargetVascan2.IsDropped = false : cLightVascan2.state = 2 '"
-	vpmtimer.addtimer 1200, "PlaySoundAt ""DropTarget_Up"", TargetVascan3 : TargetVascan3.IsDropped = false : cLightVascan3.state = 2 '"
-							PlaySoundAt "DropTarget_Up", TargetVascan4 : TargetVascan4.IsDropped = false : cLightVascan4.state = 2
-	vpmtimer.addtimer 600, "PlaySoundAt ""DropTarget_Up"", TargetVascan5 : TargetVascan5.IsDropped = false : cLightVascan5.state = 2 '"
-	vpmtimer.addtimer 1200, "PlaySoundAt ""DropTarget_Up"", TargetVascan6 : TargetVascan6.IsDropped = false : cLightVascan6.state = 2 '"
+'							PlaySoundAt "DropTarget_Up", TargetVascan1p : DTRaise 4 : cLightVascan1.state = 2
+'	vpmtimer.addtimer 600, "PlaySoundAt ""DropTarget_Up"", TargetVascan2p : DTRaise 5 : cLightVascan2.state = 2 '"
+'	vpmtimer.addtimer 1200, "PlaySoundAt ""DropTarget_Up"", TargetVascan3p : DTRaise 6 : cLightVascan3.state = 2 '"
+'							PlaySoundAt "DropTarget_Up", TargetVascan4p : DTRaise 7 : cLightVascan4.state = 2
+'	vpmtimer.addtimer 600, "PlaySoundAt ""DropTarget_Up"", TargetVascan5p : DTRaise 8 : cLightVascan5.state = 2 '"
+'	vpmtimer.addtimer 1200, "PlaySoundAt ""DropTarget_Up"", TargetVascan6p : DTRaise 9 : cLightVascan6.state = 2 '"
+
+							SoundDropTarget_Release(TargetVascan1p) : DTRaise 4 : cLightVascan1.state = 2
+	vpmtimer.addtimer 600, "SoundDropTarget_Release(TargetVascan2p) : DTRaise 5 : cLightVascan2.state = 2 '"
+	vpmtimer.addtimer 1200, "SoundDropTarget_Release(TargetVascan3p) : DTRaise 6 : cLightVascan3.state = 2 '"
+							SoundDropTarget_Release(TargetVascan4p) : DTRaise 7 : cLightVascan4.state = 2
+	vpmtimer.addtimer 600, "SoundDropTarget_Release(TargetVascan5p) : DTRaise 8 : cLightVascan5.state = 2 '"
+	vpmtimer.addtimer 1200, "SoundDropTarget_Release(TargetVascan6p) : DTRaise 9 : cLightVascan6.state = 2 '"
+
 
 End Sub
 
@@ -9025,9 +9196,13 @@ Sub LightPortalRoomShotsLeft
 	WriteToLog "LightPortalRoomShotsLeft", ""
 	VascanShotCount = 0
 
-							PlaySoundAt "DropTarget_Up", TargetVascan1 : TargetVascan1.IsDropped = false : cLightVascan1.state = 2
-	vpmtimer.addtimer 500, "PlaySoundAt ""DropTarget_Up"", TargetVascan2 : TargetVascan2.IsDropped = false : cLightVascan2.state = 2 '"
-	vpmtimer.addtimer 1000, "PlaySoundAt ""DropTarget_Up"", TargetVascan3 : TargetVascan3.IsDropped = false : cLightVascan3.state = 2 '"
+'							PlaySoundAt "DropTarget_Up", TargetVascan1p : DTRaise 4 : cLightVascan1.state = 2
+'	vpmtimer.addtimer 500, "PlaySoundAt ""DropTarget_Up"", TargetVascan2p : DTRaise 5 : cLightVascan2.state = 2 '"
+'	vpmtimer.addtimer 1000, "PlaySoundAt ""DropTarget_Up"", TargetVascan3p : DTRaise 6 : cLightVascan3.state = 2 '"
+							SoundDropTarget_Release(TargetVascan1p) : DTRaise 4 : cLightVascan1.state = 2
+	vpmtimer.addtimer 500, "SoundDropTarget_Release(TargetVascan2p) : DTRaise 5 : cLightVascan2.state = 2 '"
+	vpmtimer.addtimer 1000, "SoundDropTarget_Release(TargetVascan3p) : DTRaise 6 : cLightVascan3.state = 2 '"
+
 
 End Sub
 
@@ -9035,9 +9210,14 @@ Sub LightPortalRoomShotsRight
 	WriteToLog "LightPortalRoomShotsRight", ""
 	VascanShotCount = 0
 
-							PlaySoundAt "DropTarget_Up", TargetVascan4 : TargetVascan4.IsDropped = false : cLightVascan4.state = 2
-	vpmtimer.addtimer 500, "PlaySoundAt ""DropTarget_Up"", TargetVascan5 : TargetVascan5.IsDropped = false : cLightVascan5.state = 2 '"
-	vpmtimer.addtimer 1000, "PlaySoundAt ""DropTarget_Up"", TargetVascan6 : TargetVascan6.IsDropped = false : cLightVascan6.state = 2 '"
+'							PlaySoundAt "DropTarget_Up", TargetVascan4p : DTRaise 7 : cLightVascan4.state = 2
+'	vpmtimer.addtimer 500, "PlaySoundAt ""DropTarget_Up"", TargetVascan5p : DTRaise 8 : cLightVascan5.state = 2 '"
+'	vpmtimer.addtimer 1000, "PlaySoundAt ""DropTarget_Up"", TargetVascan6p : DTRaise 9 : cLightVascan6.state = 2 '"
+
+							SoundDropTarget_Release(TargetVascan4p) : DTRaise 7 : cLightVascan4.state = 2
+	vpmtimer.addtimer 500, "SoundDropTarget_Release(TargetVascan5p) : DTRaise 8 : cLightVascan5.state = 2 '"
+	vpmtimer.addtimer 1000, "SoundDropTarget_Release(TargetVascan6p) : DTRaise 9 : cLightVascan6.state = 2 '"
+
 
 End Sub
 
@@ -9046,7 +9226,8 @@ Sub CheckPortalRoomShot(nr)
 	If CurrentMission = 5 Then
 		if VascanLights(nr-1).state = 2 Then
 			VascanLights(nr-1).state = 0
-			PlaySoundAt "DropTarget_Down", Eval("TargetVascan" & nr)
+'			PlaySoundAt "DropTarget_Down", Eval("TargetVascan" & nr & "p")
+			SoundDropTarget(Eval("TargetVascan" & nr & "p"))
 			WriteToLog "Mission 5", "Nice Shot!"
 			AudioCallout "nice shot"
 			playsound "EFX_click_bleep",0,CalloutVol,0,0,1,1,1
@@ -9082,7 +9263,8 @@ Sub CheckPortalRoomShot(nr)
 	elseif WizardPhase = 3 Then
 		if VascanLights(nr-1).state = 2 Then
 			VascanLights(nr-1).state = 0
-			PlaySoundAt "DropTarget_Down", Eval("TargetVascan" & nr)
+'			PlaySoundAt "DropTarget_Down", Eval("TargetVascan" & nr & "p")
+			SoundDropTarget(Eval("TargetVascan" & nr & "p"))
 			WriteToLog "Wizardphase3", "Nice Shot!"
 			'AudioCallout "nice shot"
 			playsound "EFX_click_bleep",0,CalloutVol,0,0,1,1,1
@@ -9122,21 +9304,23 @@ If HasPuP=False then exit Sub
 End Sub
 
 
-
+hexfloor.visible = false
 Sub EndMission5
 	PlayDefaultSong
 	cLightMission5.blinkinterval=300
 	bMissionMode = False
 	gioff_underpf_boost false
 	RestoreLaneInsertStates
-	hexfloor.blenddisablelighting = 0
+	if vrroom=1 then hexfloor.opacity = 0 : hexfloor.visible = false
 
-	TargetVascan1.IsDropped = true
-	TargetVascan2.IsDropped = true
-	TargetVascan3.IsDropped = true
-	TargetVascan4.IsDropped = true
-	TargetVascan5.IsDropped = true
-	TargetVascan6.IsDropped = true
+'	TargetVascan1.IsDropped = true
+	DTDrop 4 : DTDrop 5 : DTDrop 6
+	DTDrop 7 : DTDrop 8 : DTDrop 9
+'	TargetVascan2.IsDropped = true
+'	TargetVascan3.IsDropped = true
+'	TargetVascan4.IsDropped = true
+'	TargetVascan5.IsDropped = true
+'	TargetVascan6.IsDropped = true
 
 	dim xx
 	for each xx in VascanLights
@@ -9152,6 +9336,7 @@ Sub EndMission5
 		CheckMissionCompleteAward
 		WriteToLog "Mission 5", "Completed"
 		PuPEvent(526)
+		DOF 511, DOFOff
 		vpmtimer.addtimer 555, "StopVideosPlaying : showMissionVideo=21 '"
 	Else
 		cLightMission5.state=2
@@ -9159,6 +9344,7 @@ Sub EndMission5
 		StopVideosPlaying
 		showMissionVideo=22
 		PuPEvent(525)
+		DOF 511, DOFOff
 	End If
 End Sub
 
@@ -9200,7 +9386,7 @@ Sub StartMission6
 	PlaySong 8
 	PuPEvent(510)
 	PuPEvent(521)
-	DOF 510, DOFPulse
+	DOF 510, DOFOn
 	ModeTextDelay6.Enabled=True
 End Sub
 
@@ -9306,6 +9492,8 @@ Sub EndMission6
 		CheckMissionCompleteAward
 		WriteToLog "Mission 6", "Completed"
 		PuPEvent(526)
+		DOF 510, DOFOff
+		Mtimercountdown= "Default"
 		PupMission= "Default"
 		MBPupCheck.Enabled=true
 		vpmtimer.addtimer 555, "StopVideosPlaying : showMissionVideo=25 '"
@@ -9315,6 +9503,8 @@ Sub EndMission6
 		StopVideosPlaying
 		showMissionVideo=26
 		PuPEvent(525)
+		DOF 510, DOFOff
+		Mtimercountdown= "Default"
 		PupMission= "Default"
 		SkillPupFlash="Default"
 	End If
@@ -9349,7 +9539,8 @@ Sub StartMission7
 	PlaySongLoop 12, 351.6, 402
 	PuPEvent(507)
 	PuPEvent(584)
-	DOF 507, DOFPulse
+	DOF 507, DOFOn
+	ModeTextDelay7.Enabled=true
 End Sub
 
 
@@ -9446,15 +9637,19 @@ Sub EndMission7
 		CheckMissionCompleteAward
 		WriteToLog "Mission 7", "Completed"
 		vpmtimer.addtimer 555, "StopVideosPlaying : showMissionVideo=29 '"
+		Mtimercountdown= "Default"
 		PuPEvent(526)
-		DOF 526, DOFPulse
+		DOF 507, DOFOff
 	Else
 		cLightMission7.state=2
 		WriteToLog "Mission 7", "Not Completed"
 		StopVideosPlaying
 		showMissionVideo=30
+		Mtimercountdown= "Default"
 		PuPEvent(525)
 		DOF 525, DOFPulse
+		DOF 507, DOFOff
+
 	End If
 End Sub
 
@@ -9499,6 +9694,7 @@ Sub EndDoubleScoring
 	DTRaise 1
 	DTRaise 2
 	DTRaise 3
+	RandomSoundDropTargetLeft(TargetScavenge2p)
 	WriteToLog "ScavangeTargets","Popped Up"
 	cLightMystery2.state = 1
 	WriteToLog "ScavangeTargets","Light 2 Solid"
@@ -9534,6 +9730,8 @@ Sub StartSuperSpinners
 	SpinnerMultiplier = 5
 	SuperSpinnerTimer.interval = 30000
 	SuperSpinnerTimer.enabled = true
+	PuPEvent(470)
+	DOF 470, DOFPulse
 End Sub
 
 sub SuperSpinnerTimer_timer
@@ -9548,6 +9746,7 @@ Sub EndSuperSpinners
 	DTRaise 1
 	DTRaise 2
 	DTRaise 3
+	RandomSoundDropTargetLeft(TargetScavenge2p)
 	LS_SuperSpinner.stopplay
 	WriteToLog "ScavangeTargets","Popped Up"
 	cLightMystery3.state = 1
@@ -9706,7 +9905,7 @@ Sub ShootGun(Enabled)
 			If CurrentMission=1 Then showMissionVideo=4					  
 			PlaySoundAt SoundFX("LaserBlast1", DOFContactors), sw45
 			PuPEvent(582)
-			DOF 582, DOFPulse
+			DOF 877, DOFPulse
 			BlastBall.Interval = 30 : BlastBall_Timer()
 
 			PulseLaser true
@@ -10003,6 +10202,9 @@ sub updateVRDust
 	vr360_RoomHaze2.rotz = VRDustCntr * 1.5
 	if VRDustCntr > 100000 then VRDustCntr = 0
 end sub
+'
+'dim vrtunnellightcounter : vrtunnellightcounter = 0
+'dim vrtunnellightdir : vrtunnellightdir = 1
 
 Sub GameTimer_Timer()
 	Cor.Update
@@ -10026,14 +10228,25 @@ Sub GameTimer_Timer()
 			SetInsertBlooms gilvl
 		end if
 	end if
+	'vr tunnel light flicker
+'	if vrroom = 1 Then
+'		pTunnel_light.opacity = 100 + (100 * gilvl) + (vrtunnellightcounter * 2 * gilvl) + rndint(0,30)
+'		vrtunnellightcounter = vrtunnellightcounter + vrtunnellightdir
+'		if vrtunnellightcounter => 100 then vrtunnellightdir = -1
+'		if vrtunnellightcounter =< 0 then vrtunnellightdir = 1
+'	end if
+
 End Sub
 
 sub SetInsertBlooms(ByVal levelGI)
-	dim x,i
-	for Each x in InsertBlooms 'restore blooms
-		i=i+1
-		x.Intensity = (Insert_Blooms(i) * (1-levelGI))*(1-Insert_Bloom_x_GIon) + (Insert_Blooms(i) * Insert_Bloom_x_GIon)
-	next
+	if bInsertBlooms then 
+		dim x,i
+		for Each x in InsertBlooms 'restore blooms
+			i=i+1
+			x.Intensity = (Insert_Blooms(i) * (1-levelGI))*(1-Insert_Bloom_x_GIon) + (Insert_Blooms(i) * Insert_Bloom_x_GIon)
+'			if i = 1 then debug.print round((Insert_Blooms(i) * (1-levelGI))*(1-Insert_Bloom_x_GIon) + (Insert_Blooms(i) * Insert_Bloom_x_GIon),2)
+		next
+	end if
 end sub
 
 sub UpdateFlashersByDTs
@@ -10809,6 +11022,8 @@ Sub AwardSkillshot2
 	DOF 130,2 'skill shot 2
 	playsound "zing"
 	AudioCallout "skillshot"
+	PuPEvent(472)
+	DOF 472,DOFPulse
 
 	CompletedSkillshots(CurrentPlayer)=CompletedSkillshots(CurrentPlayer)+1
 
@@ -10822,6 +11037,8 @@ Sub AwardSkillshot2
 			Addscore score_Skillshot2_1st : addBonus bonus_Skillshot2_1st
 			ShowSkillshot2="2 MILLION"
 			ShowSkillshot=100
+			SkillPupFlash= "5"
+			SkillShotPup5.Enabled=True
 			AddMultiball 1
 '		case 2 : 
 '			If Not cLightCollectExtraBall.state=2 and TotalExtraBallsAwarded(CurrentPlayer) < MaxExtraBallsPerGame Then
@@ -10839,16 +11056,22 @@ Sub AwardSkillshot2
 			Addscore score_Skillshot2_2nd : addBonus bonus_Skillshot2_2nd
 			ShowSkillshot2="2.2 MILLION"
 			ShowSkillshot=100
+			SkillPupFlash= "6"
+			SkillShotPup6.Enabled=True
 			AddMultiball 1
 		case 3 :
 			Addscore score_Skillshot2_3rd : addBonus bonus_Skillshot2_3rd
 			ShowSkillshot2="2.4 MILLION"
 			ShowSkillshot=100
+			SkillPupFlash= "7"
+			SkillShotPup7.Enabled=True
 			AddMultiball 1
 		case 4,5,6 :
 			Addscore score_Skillshot2_4th : addBonus bonus_Skillshot2_4th
 			ShowSkillshot2="2.6 MILLION"
 			ShowSkillshot=100
+			SkillPupFlash= "8"
+			SkillShotPup8.Enabled=True
 			AddMultiball 1
 	End Select
 
@@ -10864,6 +11087,8 @@ Sub AwardSkillshot3 ' secret skillshot doubles ss2 points
 	DOF 131,2 'skill shot 3
 	playsound "zing"
 	AudioCallout "skillshot"
+	PuPEvent(472)
+	DOF 472, DOFPulse
 
 	CompletedSkillshots(CurrentPlayer)=CompletedSkillshots(CurrentPlayer)+1
 
@@ -10875,6 +11100,8 @@ Sub AwardSkillshot3 ' secret skillshot doubles ss2 points
 				cLightCollectExtraBall.state=2
 				ShowSkillshot=100
 				ShowSkillshot2="EXTRABALL IS LIT"
+				SkillPupFlash= "9"
+				SkillShotPup9.Enabled=True
 			Else
 				ShowSkillshot2="4 MILLION"
 				ShowSkillshot=100
@@ -10888,16 +11115,22 @@ Sub AwardSkillshot3 ' secret skillshot doubles ss2 points
 			Addscore score_Skillshot3_2nd : addBonus bonus_Skillshot3_2nd
 			ShowSkillshot2="4.4 MILLION"
 			ShowSkillshot=100
+			SkillPupFlash= "10"
+			SkillShotPup10.Enabled=True
 			AddMultiball 1
 		case 3 :
 			Addscore score_Skillshot3_3rd : addBonus bonus_Skillshot3_3rd
 			ShowSkillshot2="4.8 MILLION"
 			ShowSkillshot=100
+			SkillPupFlash= "11"
+			SkillShotPup11.Enabled=True
 			AddMultiball 1
 		case 4,5,6 :
 			Addscore score_Skillshot3_4th : addBonus bonus_Skillshot3_4th
 			ShowSkillshot2="5.2 MILLION"
 			ShowSkillshot=100
+			SkillPupFlash= "12"
+			SkillShotPup12.Enabled=True
 			AddMultiball 1
 	End Select
 End Sub
@@ -11074,6 +11307,9 @@ Sub ResetForNewGame()
 	bExtraBallWonThisBall = False
 	bMultiballReady = False
 	bMultiBallMode = False
+	PupBumperTracy = True
+	PupBumpertenthousand =False
+	PupBumpersuperjets = False
 
 	StopAttractMode
 	TotalGamesPlayed = TotalGamesPlayed + 1
@@ -11094,6 +11330,9 @@ Sub ResetForNewGame()
 		TotalExtraBallsAwarded(i) = 0
 		BumperHits(i) = 0
 		BumperHitsPup(i) = 0
+		BumperThousandPup(i) = 0
+		BumperTwentyThousandPup(i) = 0
+		BumperscoringPup(i) =0
 		MysteryEB(i)=0
 		Mission1Points(i)=0
 		Mission2Points(i)=0
@@ -11136,6 +11375,7 @@ Sub EndOfGame()
 	showMissionVideo=60
 	PuPEvent(409)
 	Scorbit.StopSession Score(1), Score(2), Score(3), Score(4), PlayersPlayingGame
+	AttractScoreNumbers
 	'Playsound "Game_Over_1_Yell"
 	vpmtimer.addtimer 4500, "bGameInPLay = False : bJustStarted = False : StartAttractMode : StopVideosPlaying :pDMDGameOver  '"
 End Sub
@@ -11443,6 +11683,25 @@ sub PlaySong(aNro)
 	oPlayer1.controls.play
 end sub
 
+
+'dim songNro
+'sub PlaySong(aNro)
+'	songNro = aNro
+'	StopSong
+'	CurrentSong = songNro
+'	oPlayer1.settings.volume = MusicVol*100
+'	SongStartDelay.interval = 500
+'	SongStartDelay.enabled = true
+'end sub
+'
+'sub SongStartDelay_timer
+''	debug.print "delayed"
+'	oPlayer1.URL = MusicDirectory & "\" & Songs(CurrentSong)
+'	oPlayer1.controls.play
+'	SongStartDelay.enabled = false
+'end sub
+
+
 dim playloop:playloop = 1
 sub PlaySongLoop(aNro,starting,ending)
 	StopSong
@@ -11480,14 +11739,21 @@ sub PlaySongStartingAt(chan,aNro,seconds)
 end sub
 
 
-sub StopSong
-	If oPlayer1.playState <> 1 Then oPlayer1.close
-	If oPlayer2.playState <> 1 Then oPlayer2.close
-	SongLoopStart = 0
-	SongLoopEnd = 0
-	CurrentSong = 0
-end sub
+'sub StopSongOld
+''	If oPlayer1.playState <> 1 Then oPlayer1.close
+''	If oPlayer2.playState <> 1 Then oPlayer2.close
+'	SongLoopStart = 0
+'	SongLoopEnd = 0
+'	CurrentSong = 0
+'end sub
 
+sub StopSong
+    If oPlayer1.playState <> 1 Then oPlayer1.controls.stop
+    If oPlayer2.playState <> 1 Then oPlayer2.controls.stop
+    SongLoopStart = 0
+    SongLoopEnd = 0
+    CurrentSong = 0
+end sub
 
 Function SongTime
 	Dim t1, t2
@@ -12082,6 +12348,8 @@ Sub AwardExtraBall
 		DOF 504, DOFPulse
 		PuPevent (504)
 		ExtraBallsAwards(CurrentPlayer) = ExtraBallsAwards(CurrentPlayer) + 1
+		cLightShootAgain1.state=1
+		cLightShootAgain2.state=1
 	End If 
 End Sub
 
@@ -12108,6 +12376,7 @@ Sub FirstBall
 	WriteToLog "FirstBall", ""
 	ResetForNewPlayerBall()
 	CreateNewBall()
+	PupBumperTracy = True
 
 End Sub
 
@@ -12118,6 +12387,7 @@ Sub ResetForNewPlayerBall()
 	cLightKB2.state=1 : cLightKB1.state=0 		' reset kickback
 	ShowBallCount true
 	PlayersPUP
+	Superjetsdrainreset
 	If PlayersPlayingGame > 1 Then
 		FlexDMD.stage.GetLabel("Score_1").text = "Player " & CurrentPlayer
 		AudioCallout "player" & CurrentPlayer
@@ -12169,7 +12439,8 @@ Sub CreateNewBall()
 	BallRelease.CreateSizedball BallSize / 2
 	BallsOnPlayfield = BallsOnPlayfield + 1
 	WriteToLog "CreateNewBall", "BallsOnPlayfield = "  & BallsOnPlayfield
-	RandomSoundTroughKickoutDOF BallRelease, 104, DOFPulse	'ssftodo: check dof --> sling right
+'	RandomSoundTroughKickoutDOF BallRelease, 104, DOFPulse	'ssftodo: check dof --> sling right
+	RandomSoundShooterFeeder()
 	DOF 145,2 'ball released
 	bOpenTopGate = false
 	BallRelease.Kick 90, 4
@@ -12227,7 +12498,7 @@ Sub EndOfBall()
 	OrbUnlockShot = 0
 	PFMultiplier.enabled = 0
 	If SpinnerMultiplier > 1 Then EndSuperSpinners
-	EndWizard
+	'EndWizard	'old end of wizard position
 	LS_AllFlashers.play SeqStripe2VertOn, 50, 1			'drain effect. may need some variations?
 	AudioCallout "drain"
 	If NOT Tilted and NOT Slammed Then
@@ -12261,15 +12532,18 @@ Sub EndOfBall2()
 			cLightShootAgain1.State = 0
 			cLightShootAgain2.State = 0
 		End If
-		'make extraball have mission available without unlock
-		OrbUnlockShot = 0
-		cLightMissionStart1.state = 2
+		'make extraball have mission available without unlock, unless wizard ongoing
+		if Not bWizardMode then
+			OrbUnlockShot = 0
+			cLightMissionStart1.state = 2
+		end if
 		vpmtimer.addtimer 300, "PlaySound ""SPC_extra_ball"",0,CalloutVol,0,0,1,1,1 '"
 		CreateNewBall()
 		ResetForNewPlayerBall
 	Else
 		BallsRemaining(CurrentPlayer) = BallsRemaining(CurrentPlayer) - 1
 		Ballblink=20
+		EndWizard		'moved to here that extraball could work in wizard too
 		If(BallsRemaining(CurrentPlayer) <= 0) Then
 			CheckHighScore()
 		Else
@@ -12335,7 +12609,7 @@ Sub Drain_Hit()
 		WizardSoulLost = true
 	end if
 
-	RandomSoundTroughDrain Drain
+	RandomSoundOutholeHit Drain
 	If(bGameInPLay = True) AND(Tilted = False) AND(Slammed = False) Then
 		If(bBallSaverActive = True) Then
 			PupBallSaveMBControl
@@ -12383,7 +12657,7 @@ Sub swPlungerRest_Hit()
 	bBallInPlungerLane = True
 	DOF 124,1 'ball in plunger lane
 
-	SoundTroughToShooterLane()
+'	SoundTroughToShooterLane()
 
 	If bAutoPlunger Then
 		autoplungerdelay.interval = 300
@@ -12759,75 +13033,86 @@ End Sub
 
 
 Sub TargetVascan1_Hit
-	DOF 112,2
-    SwitchWasHit("TargetVascan")
-	If VRRoom > 0 Then
-		VRBGFL3
-	End If
-	VRBGFL3
-	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
-	GaldorReset=true:GaldorQ1 = "fYa"
-	CheckPortalRoomShot 1
+'	DOF 112,2
+	DTHit 4
+	TargetBouncer Activeball, 1.3
+'    SwitchWasHit("TargetVascan")
+'	If VRRoom > 0 Then
+'		VRBGFL3
+'	End If
+'	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+'	GaldorReset=true:GaldorQ1 = "fYa"
+'	CheckPortalRoomShot 1
 End Sub
 
 Sub TargetVascan2_Hit
-	DOF 112,2
-    SwitchWasHit("TargetVascan")
-	startB2S 3
-	If VRRoom > 0 Then
-		VRBGFL3
-	End If
-	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
-	GaldorReset=true:GaldorQ1 = "fYb"
-	CheckPortalRoomShot 2
+	DTHit 5
+	TargetBouncer Activeball, 1.3
+'	DOF 112,2
+'    SwitchWasHit("TargetVascan")
+'	startB2S 3
+'	If VRRoom > 0 Then
+'		VRBGFL3
+'	End If
+'	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+'	GaldorReset=true:GaldorQ1 = "fYb"
+'	CheckPortalRoomShot 2
 End Sub
 
 Sub TargetVascan3_Hit
-	DOF 112,2
-    SwitchWasHit("TargetVascan")
-	startB2S 3
-	If VRRoom > 0 Then
-		VRBGFL3
-	End If
-	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
-	GaldorReset=true:GaldorQ1 = "fYa"
-	CheckPortalRoomShot 3
+	DTHit 6
+	TargetBouncer Activeball, 1.3
+'	DOF 112,2
+'    SwitchWasHit("TargetVascan")
+'	startB2S 3
+'	If VRRoom > 0 Then
+'		VRBGFL3
+'	End If
+'	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+'	GaldorReset=true:GaldorQ1 = "fYa"
+'	CheckPortalRoomShot 3
 End Sub
 
 Sub TargetVascan4_Hit
-	DOF 112,2
-    SwitchWasHit("TargetVascan")
-	startB2S 3
-	If VRRoom > 0 Then
-		VRBGFL3
-	End If
-	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
-	GaldorReset=true:GaldorQ1 = "fYb"
-	CheckPortalRoomShot 4
+	DTHit 7
+	TargetBouncer Activeball, 1.3
+'	DOF 112,2
+'    SwitchWasHit("TargetVascan")
+'	startB2S 3
+'	If VRRoom > 0 Then
+'		VRBGFL3
+'	End If
+'	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+'	GaldorReset=true:GaldorQ1 = "fYb"
+'	CheckPortalRoomShot 4
 End Sub
 
 Sub TargetVascan5_Hit
-	DOF 112,2
-    SwitchWasHit("TargetVascan")
-	startB2S 3
-	If VRRoom > 0 Then
-		VRBGFL3
-	End If
-	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
-	GaldorReset=true:GaldorQ1 = "fYa"
-	CheckPortalRoomShot 5
+	DTHit 8
+	TargetBouncer Activeball, 1.3
+'	DOF 112,2
+'    SwitchWasHit("TargetVascan")
+'	startB2S 3
+'	If VRRoom > 0 Then
+'		VRBGFL3
+'	End If
+'	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+'	GaldorReset=true:GaldorQ1 = "fYa"
+'	CheckPortalRoomShot 5
 End Sub
 
 Sub TargetVascan6_Hit
-	DOF 112,2
-    SwitchWasHit("TargetVascan")
-	startB2S 3
-	If VRRoom > 0 Then
-		VRBGFL3
-	End If
-	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
-	GaldorReset=true:GaldorQ1 = "fYb"
-	CheckPortalRoomShot 6
+	DTHit 9
+	TargetBouncer Activeball, 1.3
+'	DOF 112,2
+'    SwitchWasHit("TargetVascan")
+'	startB2S 3
+'	If VRRoom > 0 Then
+'		VRBGFL3
+'	End If
+'	playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+'	GaldorReset=true:GaldorQ1 = "fYb"
+'	CheckPortalRoomShot 6
 End Sub
 
 
@@ -12867,6 +13152,7 @@ Sub RightSlingShot_Slingshot
 	Addscore score_SlingShot
 	RotateScavangeLights
 	PlaySound "EFX_sling",0,CalloutVol,0,0,1,1,1
+'	RandomSoundSlingshotRight()
 	RandomSoundSlingshotMainRightDOF swRightInlane, 104, DOFPulse
 	RSling.Visible = 0
 	RSling1.Visible = 1
@@ -12899,6 +13185,7 @@ Sub LeftSlingShot_Slingshot
 	PlaySound "EFX_sling",0,CalloutVol,0,0,1,1,1
 '	RandomSoundSlingshotLeft swLeftInlane
 '	DOF 103, DOFPulse
+'	RandomSoundSlingshotLeft()
 	RandomSoundSlingshotMainLeftDOF swLeftInlane, 103, DOFPulse
 	LSling.Visible = 0
 	LSling1.Visible = 1
@@ -12986,16 +13273,20 @@ Sub Bumper1_Hit
 		DMD_bumper  ' Multiballactive=0 only
 		AddBumperHit
 		TracyPupCount
+		If PupBumpertenthousand= True Then 
+		BumperTenthousand
+		End if
+		BumperTwentythousand
 		CheckHeartOfSteelShot
 '		RandomSoundBumperTop Bumper1
 '		RandomSoundPopBumperDOF Bumper1, 105, DOFPulse
 		RandomSoundJetBumperLeftDOF Bumper1, 105, DOFPulse
-		RandomSoundBallBounceAfterPopBumper()
-		PlaySound "EFX_jolt",0,CalloutVol,0,0,1,1,1
+'		RandomSoundBallBounceAfterPopBumper()
+		PlaySound "EFX_jolt",0,CalloutVol/2,0,0,1,1,1
 		If CurrentMission=0 Then Next_MissionSelect
-		CounterBallSearch = 0
-		
+		CounterBallSearch = 0	
 	End If
+	
 End Sub
 
 
@@ -13008,16 +13299,21 @@ Sub Bumper2_Hit
 		startB2S 6
 		AddBumperHit
 		TracyPupCount
+		If PupBumpertenthousand= True Then 
+		BumperTenthousand
+		End if
+		BumperTwentythousand
 		CheckHeartOfSteelShot
-		PlaySound "EFX_jolt",0,CalloutVol,0,0,1,1,1
+		PlaySound "EFX_jolt",0,CalloutVol/2,0,0,1,1,1
 '		RandomSoundBumperMiddle Bumper2
 '		RandomSoundPopBumperDOF Bumper2, 106, DOFPulse
 		RandomSoundJetBumperLowDOF Bumper2, 106, DOFPulse
-		RandomSoundBallBounceAfterPopBumper()
+'		RandomSoundBallBounceAfterPopBumper()
 		If CurrentMission=0 Then Next_MissionSelect
 '		shake_tracy_shake.enabled = true
 		CounterBallSearch = 0
 	End If
+	
 End Sub
 
 
@@ -13030,15 +13326,20 @@ Sub Bumper3_Hit
 		startB2S 6
 		AddBumperHit
 		TracyPupCount
+		If PupBumpertenthousand= True Then 
+		BumperTenthousand
+		End if
+		BumperTwentythousand
 		CheckHeartOfSteelShot
-		PlaySound "EFX_jolt",0,CalloutVol,0,0,1,1,1
+		PlaySound "EFX_jolt",0,CalloutVol/2,0,0,1,1,1
 '		RandomSoundBumperBottom Bumper3
 '		RandomSoundPopBumperDOF Bumper3, 107, DOFPulse
 		RandomSoundJetBumperUpDOF Bumper3, 107, DOFPulse
-		RandomSoundBallBounceAfterPopBumper()
+'		RandomSoundBallBounceAfterPopBumper()
 		If CurrentMission=0 Then Next_MissionSelect
 		CounterBallSearch = 0
 	End If
+	
 End Sub
 
 
@@ -13088,7 +13389,9 @@ Sub AddBumperHit
 
 	'Next accumulate count for Super Jets
 	SuperJets = SuperJets + 1
-	If SuperJets = 50 Then AudioCallout "super jets" : ShowSuperJets=1
+	If SuperJets = 50 Then AudioCallout "super jets":Superjetspop: ShowSuperJets=1
+	
+
 	If SuperJets < 50 Then
 		AddScore score_Bumper
 		bumpersplash = 31
@@ -13101,6 +13404,17 @@ Sub AddBumperHit
 	cLightBumperHit.Timerenabled=True
 
 End Sub
+
+Sub Superjetspop
+	If SuperJets = 50 Then
+	PupBumpertenthousand = False
+	PupBumpersuperjets = True
+	BumperStages
+	PuPEvent(633)
+	DOF 471 , DOFPulse
+ End if
+End Sub
+
 
 Sub cLightBumperHit_Timer
 	cLightBumperHit.state=0
@@ -14012,7 +14326,7 @@ End Class
 '******************************************************
 
 'Define a variable for each drop target
-Dim DT1, DT2, DT3
+Dim DT1, DT2, DT3, DT4, DT5, DT6,DT7, DT8, DT9
 
 'Set array with drop target objects
 '
@@ -14033,12 +14347,17 @@ Dim DT1, DT2, DT3
 DT1 = Array(TargetScavenge1, TargetScavenge1a, TargetScavenge1p, 1, 0)
 DT2 = Array(TargetScavenge2, TargetScavenge2a, TargetScavenge2p, 2, 0)
 DT3 = Array(TargetScavenge3, TargetScavenge3a, TargetScavenge3p, 3, 0)
-
+DT4 = Array(TargetVascan1, TargetVascan1a, TargetVascan1p, 4, 0)
+DT5 = Array(TargetVascan2, TargetVascan2a, TargetVascan2p, 5, 0)
+DT6 = Array(TargetVascan3, TargetVascan3a, TargetVascan3p, 6, 0)
+DT7 = Array(TargetVascan4, TargetVascan4a, TargetVascan4p, 7, 0)
+DT8 = Array(TargetVascan5, TargetVascan5a, TargetVascan5p, 8, 0)
+DT9 = Array(TargetVascan6, TargetVascan6a, TargetVascan6p, 9, 0)
 
 Dim DTArray
-DTArray = Array(DT1, DT2, DT3)
-Dim DTIsDropped(3)
-Dim DTWasDropped(3)
+DTArray = Array(DT1, DT2, DT3, DT4, DT5, DT6, DT7, DT8, DT9)
+Dim DTIsDropped(9)
+Dim DTWasDropped(9)
 
 'Configure the behavior of Drop Targets.
 Const DTDropSpeed = 80 'in milliseconds
@@ -14052,8 +14371,8 @@ Const DTBrickVel = 30 'velocity at which the target will brick, set to '0' to di
 
 Const DTEnableBrick = 0 'Set to 0 to disable bricking, 1 to enable bricking
 Const DTHitSound = "" 'Drop Target Hit sound
-Const DTDropSound = "DropTarget_Down" 'Drop Target Drop sound
-Const DTResetSound = "DropTarget_Up" 'Drop Target reset sound
+'Const DTDropSound = "DropTarget_Down" 'Drop Target Drop sound
+'Const DTResetSound = "DropTarget_Up" 'Drop Target reset sound
 
 Const DTMass = 0.2 'Mass of the Drop Target (between 0 and 1), higher values provide more resistance
 
@@ -14073,9 +14392,15 @@ Sub DTHit(switch)
 	End If
 	DoDTAnim
 	Select Case Switch
-		case 1: LightMystery1C.visible = false : SoundDropTarget1_Hit 
-		case 2: LightMystery2C.visible = false : SoundDropTarget2_Hit
-		case 3: LightMystery3C.visible = false : SoundDropTarget3_Hit
+		case 1: LightMystery1C.visible = false : SoundDropTarget3Bank TargetScavenge1p
+		case 2: LightMystery2C.visible = false : SoundDropTarget3Bank TargetScavenge2p
+		case 3: LightMystery3C.visible = false : SoundDropTarget3Bank TargetScavenge3p
+		case 4: SoundDropTarget TargetVascan1p
+		case 5: SoundDropTarget TargetVascan2p
+		case 6: SoundDropTarget TargetVascan3p
+		case 7: SoundDropTarget TargetVascan4p
+		case 8: SoundDropTarget TargetVascan5p
+		case 9: SoundDropTarget TargetVascan6p
 	end Select
 End Sub
 
@@ -14200,9 +14525,15 @@ Function DTAnimate(primary, secondary, prim, switch,  animate)
 '		SoundDropTargetDrop prim
 '		debug.print "drop " & Switch
 		Select Case Switch
-			case 1: SoundDropTarget1_Release
-			case 2: SoundDropTarget2_Release
-			case 3: SoundDropTarget3_Release
+			case 1: 'SoundDropTarget_Release TargetScavenge1p
+			case 2: 'SoundDropTarget_Release TargetScavenge2p
+			case 3: 'SoundDropTarget_Release TargetScavenge3p
+			case 4: SoundDropTarget_Release TargetVascan1p
+			case 5: SoundDropTarget_Release TargetVascan2p
+			case 6: SoundDropTarget_Release TargetVascan3p
+			case 7: SoundDropTarget_Release TargetVascan4p
+			case 8: SoundDropTarget_Release TargetVascan5p
+			case 9: SoundDropTarget_Release TargetVascan6p
 		end Select
 	End If
 
@@ -14285,11 +14616,17 @@ Function DTAnimate(primary, secondary, prim, switch,  animate)
 			primary.collidable = 1
 			secondary.collidable = 0
 'debug.print "raise " & Switch
-			Select Case Switch
-				case 1: DropTarget1_Reset_Coil
-				case 2: DropTarget2_Reset_Coil
-				case 3: DropTarget3_Reset_Coil
-			end Select
+'			Select Case Switch
+'				case 1: DropTarget_Reset_Coil 1, TargetScavenge1p
+'				case 2: DropTarget_Reset_Coil 2, TargetScavenge2p
+'				case 3: DropTarget_Reset_Coil 3, TargetScavenge3p
+'				case 4: DropTarget_Reset_Coil 4, TargetVascan1p
+'				case 5: DropTarget_Reset_Coil 5, TargetVascan2p
+'				case 6: DropTarget_Reset_Coil 6, TargetVascan3p
+'				case 7: DropTarget_Reset_Coil 7, TargetVascan4p
+'				case 8: DropTarget_Reset_Coil 8, TargetVascan5p
+'				case 9: DropTarget_Reset_Coil 9, TargetVascan6p
+'			end Select
 		end If 
 	End If
 End Function
@@ -14319,6 +14656,65 @@ Sub DTAction(switchid)
 			AddScore score_DropsHit
 			LightFlash6b3d.state = 1
 			TargetScavenge1.timerenabled=True
+        Case 4:
+            DOF 112,2
+            SwitchWasHit("TargetVascan")
+            If VRRoom > 0 Then
+                VRBGFL3
+            End If
+            playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+            GaldorReset=true:GaldorQ1 = "fYa"
+            CheckPortalRoomShot 1
+        Case 5:
+        	DOF 112,2
+            SwitchWasHit("TargetVascan")
+            startB2S 3
+            If VRRoom > 0 Then
+                VRBGFL3
+            End If
+            playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+            GaldorReset=true:GaldorQ1 = "fYb"
+            CheckPortalRoomShot 2
+        Case 6:
+        	DOF 112,2
+            SwitchWasHit("TargetVascan")
+            startB2S 3
+            If VRRoom > 0 Then
+                VRBGFL3
+            End If
+            playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+            GaldorReset=true:GaldorQ1 = "fYa"
+            CheckPortalRoomShot 3
+        Case 7:
+        	DOF 112,2
+            SwitchWasHit("TargetVascan")
+            startB2S 3
+            If VRRoom > 0 Then
+                VRBGFL3
+            End If
+            playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+            GaldorReset=true:GaldorQ1 = "fYb"
+            CheckPortalRoomShot 4
+        Case 8:
+        	DOF 112,2
+            SwitchWasHit("TargetVascan")
+            startB2S 3
+            If VRRoom > 0 Then
+                VRBGFL3
+            End If
+            playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+            GaldorReset=true:GaldorQ1 = "fYa"
+            CheckPortalRoomShot 5
+        Case 9:
+            DOF 112,2
+            SwitchWasHit("TargetVascan")
+            startB2S 3
+            If VRRoom > 0 Then
+                VRBGFL3
+            End If
+            playsound "EFX_ui_sound",0,CalloutVol,0,0,1,1,1
+            GaldorReset=true:GaldorQ1 = "fYb"
+            CheckPortalRoomShot 6
 	End Select
 End Sub
 
@@ -14645,37 +15041,27 @@ End Function
 '//  <TABLE MANUFACTURER ABBREVIATION>_<TABLE NAME ABBREVIATION>_<SOUNDSET REVISION NUMBER>
 '//  
 '//  General Mechanical Sounds Cartridges:
-'Const Cartridge_Bumpers					= "SY_TNA_REV02" 'Spooky Total Nuclear Annihilation Cartridge REV02
-Const Cartridge_Bumpers					= "VPW_BM_REV01" 'TNA+BPT custom bumper mix Cartridge REV01
-Const Cartridge_Slingshots				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Flippers				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Kickers					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+Const Cartridge_Bumpers					= "WS_PBT_REV01" 'Williams Pinbot REV01
+Const Cartridge_Slingshots				= "WS_PBT_REV01" 'Williams Pinbot REV01
+Const Cartridge_Flippers				= "WS_PBT_REV01" 'Williams Pinbot REV01
+Const Cartridge_Kickers					= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
 Const Cartridge_Kickers2				= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
-Const Cartridge_Diverters				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_Knocker					= "WS_WHD_REV02" 'Williams Whirlwind Cartridge REV02
-'Const Cartridge_Relays					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Relays					= "WS_WHD_REV01"
-Const Cartridge_Trough					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Rollovers				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Targets					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Gates					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+Const Cartridge_Relays					= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Trough					= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Rollovers				= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Targets					= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Gates					= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
 Const Cartridge_Spinner					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Rubber_Hits				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Metal_Hits				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Plastic_Hits			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Wood_Hits				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Cabinet_Sounds			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Apron					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Drain					= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+Const Cartridge_Rubber_Hits				= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Metal_Hits				= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Cabinet_Sounds			= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Apron					= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
 Const Cartridge_Ball_Roll				= "BY_TOM_REV01" 'Bally Theatre of Magic Cartridge REV01
-'Const Cartridge_Ball_Roll				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 Const Cartridge_BallBallCollision		= "BY_WDT_REV01" 'Bally WHO Dunnit Cartridge REV01
-Const Cartridge_Ball_Drop_Bump			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-'Const Cartridge_Plastic_Ramps			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-'Const Cartridge_Metal_Ramps				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
-Const Cartridge_Plastic_Ramps			= "WS_WHD_REV01"
-Const Cartridge_Metal_Ramps				= "WS_WHD_REV01"
-Const Cartridge_Ball_Guides				= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
+Const Cartridge_Ball_Drop_Bump			= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Plastic_Ramps			= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
+Const Cartridge_Metal_Ramps				= "WS_WHD_REV01" 'Williams Whirlwind Cartridge REV01
 Const Cartridge_Table_Specifics			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihilation Cartridge REV01
 
 
@@ -14687,6 +15073,7 @@ Const Cartridge_Table_Specifics			= "SY_TNA_REV01" 'Spooky Total Nuclear Annihil
 '//  Bally Theatre of Magic - CalleV, nickbuol
 '//  Bally WHO Dunnit - Amazaley1
 '//  Williams Whirlwind - Blackmoor, wrd1972
+'//  Williams Pinbot - major_drain_pinball
 
 '///////////////////////////////  USER PARAMETERS  //////////////////////////////
 '
@@ -14715,7 +15102,11 @@ FlipperHoldSoundLevel = 0.3												'volume level; range [0, 1]
 '//  Bumpers in this table: Only one
 Dim SlingshotSoundFactor, BumperSoundFactor, KnockerSoundLevel
 Dim AutoPlungerSoundLevel, ScoopKickerSoundLevel, TroughKickoutSoundLevel, GateCoilHoldSoundLevel
+Dim Solenoid_OutholeKicker_SoundLevel, Solenoid_ShooterFeeder_SoundLevel, KickouBallDropSoundLevel, ScoopEnterSoundLevel
 
+AutoPlungerSoundLevel = 1												'volume level; range [0, 1]
+Solenoid_OutholeKicker_SoundLevel = 1
+Solenoid_ShooterFeeder_SoundLevel = 1
 SlingshotSoundFactor = 0.95												'volume multiplier
 BumperSoundFactor = 0.95												'volume multiplier
 KnockerSoundLevel = 1 													'volume level; range [0, 1]
@@ -14723,7 +15114,8 @@ AutoPlungerSoundLevel = 1												'volume level; range [0, 1]
 ScoopKickerSoundLevel = 1												'volume level; range [0, 1]
 TroughKickoutSoundLevel = 1												'volume level; range [0, 1]
 GateCoilHoldSoundLevel = 0.0025											'volume level; range [0, 1]
-
+KickouBallDropSoundLevel = 1
+ScoopEnterSoundLevel = 0.85
 
 '//  CONTROLLED / SWITCHED COILS:
 '//	 DropTargets in this table: Drop Target1 (Top), Drop Target2 (Middle), Drop Target3 (Bottom)
@@ -14753,11 +15145,12 @@ PlasticRampRollSoundFactor = 0.2
 MetalWireRampRollSoundFactor = 0.4
 
 '////////////////////////////  SWITCHES SOUNDS CONFIG  //////////////////////////
-Dim StandupTargetSoundFactor, SpinnerSpinSoundLevel, RolloverSoundLevel
+Dim StandupTargetSoundFactor, SpinnerSpinSoundLevel, RolloverSoundLevel, OutLaneRolloverSoundLevel
 
 StandupTargetSoundFactor = 0.0005										'volume multiplier
 SpinnerSpinSoundLevel = 0.005											'volume level; range [0, 1]
 RolloverSoundLevel = 0.15                              					'volume level; range [0, 1]
+OutLaneRolloverSoundLevel = 0.8
 
 
 '////////////////////  BALL HITS, BUMPS, DROPS SOUND CONFIG  ////////////////////
@@ -14767,11 +15160,12 @@ Dim BallBouncePlayfieldSoftSoundFactor, BallBouncePlayfieldHardSoundFactor
 Dim BallBounceAfterPopBumperSoundLevel, BallBounceAfterSlingshotSoundLevel
 Dim BallBouncePlayfieldFromMetalShooterLaneSoundLevel
 Dim ScoopEntrySoundLevel, ScoopHitSoundLevel
-Dim GateFlapSoundLevel, GateHitSoundLevel, SpinnerHitSoundLevel
+Dim SpinnerHitSoundLevel
+Dim Switch_Gate_SoundLevel
 
 RubberStrongSoundFactor = 0.10025										'volume multiplier
 RubberWeakSoundFactor = 0.10025											'volume multiplier
-RubberFlipperSoundFactor = 0.01025										'volume multiplier
+RubberFlipperSoundFactor = 0.08											'volume multiplier
 BallWithBallCollisionSoundFactor = 3.2									'volume multiplier
 BallBouncePlayfieldSoftSoundFactor = 0.005								'volume multiplier
 BallBouncePlayfieldHardSoundFactor = 0.005								'volume multiplier
@@ -14780,15 +15174,14 @@ BallBounceAfterSlingshotSoundLevel = 1									'volume level; range [0, 1]
 BallBouncePlayfieldFromMetalShooterLaneSoundLevel = 1					'volume level; range [0, 1]
 ScoopEntrySoundLevel = 1												'volume level; range [0, 1]
 ScoopHitSoundLevel = 1													'volume level; range [0, 1]
-GateFlapSoundLevel = 0.5												'volume level; range [0, 1]
-GateHitSoundLevel = 0.3													'volume level; range [0, 1]
 SpinnerHitSoundLevel = 1												'volume level; range [0, 1]
+Switch_Gate_SoundLevel = 1
 
 '///////////////////////  OTHER PLAYFIELD ELEMENTS CONFIG  //////////////////////
 Dim RollingSoundFactor, TroughDrainSoundLevel
-Dim BottomArchBallGuideSoundFactor, FlipperBallGuideSoundFactor 
+Dim BottomArchBallGuideSoundFactor, FlipperBallGuideSoundFactor, RightPlasticRampHitsSoundLevel
 Dim MetalGuideHitSoundLevel, MetalShooterLaneSoundFactor, TroughToShooterLaneOnPlungerSoundLevel, WallImpactSoundFactor
-Dim MetalBallGuideOrbitEntranceSoundFactor, MetalBallGuideOrbitRollSoundFactor
+Dim MetalBallGuideOrbitEntranceSoundFactor, MetalBallGuideOrbitRollSoundFactor, MetalImpactSoundFactor, RightPlasticRampEnteranceSoundLevel
 dim BlastSoundLevel
 
 RollingSoundFactor = 50													'volume multiplier
@@ -14800,9 +15193,11 @@ MetalGuideHitSoundLevel = 1												'volume level; range [0, 1]
 MetalShooterLaneSoundFactor = 1											'volume multiplier
 TroughToShooterLaneOnPlungerSoundLevel = 1								'volume level; range [0, 1]
 WallImpactSoundFactor = 0.02											'volume multiplier
+MetalImpactSoundFactor = 0.05
 MetalBallGuideOrbitEntranceSoundFactor = 1								'volume multiplier
 MetalBallGuideOrbitRollSoundFactor = 1									'volume multiplier
-
+RightPlasticRampEnteranceSoundLevel = 0.1
+RightPlasticRampHitsSoundLevel = 1
 
 '///////////////////////////  CABINET SOUND PARAMETERS  /////////////////////////
 Dim CoinSoundLevel, StartButtonSoundLevel, PlungerReleaseSoundLevel, PlungerPullSoundLevel
@@ -15132,7 +15527,7 @@ Sub SoundPlungerPullStop()
 End Sub
 
 Sub SoundPlungerReleaseBall()
-	PlaySoundAtLevelStatic (Cartridge_Cabinet_Sounds & "_Plunger_Release_Ball_" & Int(Rnd*2)+1), PlungerReleaseSoundLevel, Plunger
+	PlaySoundAtLevelStatic (Cartridge_Cabinet_Sounds & "_Plunger_Release_Ball_" & Int(Rnd*3)+1), PlungerReleaseSoundLevel, Plunger
 End Sub
 
 Sub SoundPlungerReleaseNoBall()
@@ -15163,27 +15558,34 @@ Sub KnockerSolenoidDOF(DOFevent, DOFstate)
 End Sub
 
 
-'///////////////////////////////  DRAIN SOUNDS  /////////////////////////////////
-Sub RandomSoundTroughDrain(drainswitch)
-	PlaySoundAtLevelStatic (Cartridge_Drain & "_Trough_Drain_" & Int(Rnd*6)+1), TroughDrainSoundLevel, drainswitch
-End Sub
 
 
-'////////////////////  TROUGH BALL RELEASE SOLENOID SOUNDS  /////////////////////
-Sub RandomSoundTroughKickout(drainswitch)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Kickers & "_Trough_Kickout_" & Int(Rnd*5)+1,DOFContactors), TroughKickoutSoundLevel, BallRelease
+'////////////////////////////////////  DRAIN  ///////////////////////////////////
+'///////////////////////////////  OUTHOLE SOUNDS  ///////////////////////////////
+dim cOutholeKicker : cOutholeKicker = 0
+Sub RandomSoundOutholeHit(drainswitch)
+	PlaySoundAtLevelStatic (Cartridge_Trough & "_Outhole_Drain_Hit_" & Int(Rnd*4)+1), Solenoid_OutholeKicker_SoundLevel, drainswitch
+	cOutholeKicker = 1
 End Sub
 
-Sub RandomSoundTroughKickoutDOF(TroughKickout, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Kickers & "_Trough_Kickout_" & Int(Rnd*5)+1, DOFevent, DOFstate, DOFContactors), TroughKickoutSoundLevel, TroughKickout
+Sub RandomSoundOutholeKicker()
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Trough & "_Outhole_Kicker_" & Int(Rnd*4)+1,DOFContactors), Solenoid_OutholeKicker_SoundLevel, drain
 End Sub
+
+'/////////////////////  BALL SHOOTER FEEDER SOLENOID SOUNDS  ////////////////////
+Sub RandomSoundShooterFeeder()
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Trough & "_Shooter_Feeder_" & Int(Rnd*6)+1,DOFContactors), Solenoid_ShooterFeeder_SoundLevel, ballrelease
+End Sub
+
 
 
 dim Solenoid_Kickback_SoundLevel : Solenoid_Kickback_SoundLevel = 1
 '///////////////////////////  LOCKING KICKER SOLENOID  //////////////////////////
 Sub RandomSoundLockingKickerSolenoid()
+'	debug.print "kick"
 	PlaySoundAtLevelStatic (Cartridge_Kickers2 & "_Locking_Kickback_" & Int(Rnd*4)+1), Solenoid_Kickback_SoundLevel, KickbackPosition
 End Sub
+
 
 
 '/////////////////////////  SLINGSHOT SOLENOID SOUNDS  //////////////////////////
@@ -15192,233 +15594,170 @@ Sub RandomSoundSlingshotMainLeft(sling)
   	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
 	
 	'debug.print "Slingshot volume: " & BallVel(Activeball) / 50 * SlingshotSoundFactor
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Slingshots & "_Slingshot_Main_Left_" 	+1,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Slingshots & "_Slingshot_Left_" & Int(Rnd*26)+1,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
 End Sub
 
 Sub RandomSoundSlingshotMainRight(sling)
 	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Slingshots & "_Slingshot_Main_Right_" & Int(Rnd*7)+1,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Slingshots & "_Slingshot_Right_" & Int(Rnd*25)+1,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
 End Sub
 
-'Sub RandomSoundSlingshotCoreLeft(sling)
-'	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-'	PlaySoundAtLevelStatic SoundFX(Cartridge_Slingshots & "_Slingshot_Core_Left_" & Int(Rnd*5)+1,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
-'End Sub
-'
-'Sub RandomSoundSlingshotCoreRight(sling)
-'	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-'	PlaySoundAtLevelStatic SoundFX(Cartridge_Slingshots & "_Slingshot_Core_Right_" & Int(Rnd*5)+1,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
-'End Sub
-'
-'Sub RandomSoundSlingshotCoreTop(sling)
-'	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-'	PlaySoundAtLevelStatic SoundFX(Cartridge_Slingshots & "_Slingshot_Core_Top_" & Int(Rnd*5)+1,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
-'End Sub
 
 
 Sub RandomSoundSlingshotMainLeftDOF(sling, DOFevent, DOFstate)
 	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Slingshots & "_Slingshot_Main_Left_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Slingshots & "_Slingshot_Left_" & Int(Rnd*26)+1, DOFevent, DOFstate,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
 End Sub
 
 Sub RandomSoundSlingshotMainRightDOF(sling, DOFevent, DOFstate)
 	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Slingshots & "_Slingshot_Main_Right_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Slingshots & "_Slingshot_Right_" & Int(Rnd*25)+1, DOFevent, DOFstate,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
 End Sub
 
-'Sub RandomSoundSlingshotCoreLeftDOF(sling, DOFevent, DOFstate)
-'	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Slingshots & "_Slingshot_Core_Left_" & Int(Rnd*5)+1, DOFevent, DOFstate,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
-'End Sub
-'
-'Sub RandomSoundSlingshotCoreRightDOF(sling, DOFevent, DOFstate)
-'	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Slingshots & "_Slingshot_Core_Right_" & Int(Rnd*5)+1, DOFevent, DOFstate,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
-'End Sub
-'
-'Sub RandomSoundSlingshotCoreTopDOF(sling, DOFevent, DOFstate)
-'	'debug.print "Slingshot volume: " & BallVel(ActiveBall) / 50 * SlingshotSoundFactor
-'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Slingshots & "_Slingshot_Core_Top_" & Int(Rnd*5)+1, DOFevent, DOFstate,DOFContactors), BallVel(Activeball) / 50 * SlingshotSoundFactor, Sling
-'End Sub
+
 
 
 '///////////////////////////  BUMPER SOLENOID SOUNDS  ///////////////////////////
 Sub RandomSoundJetBumperLeft(Bump)
 	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Left_" & Int(Rnd*7)+1,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Left_" & Int(Rnd*22)+1,DOFContactors), BallVel(ActiveBall) / 25 * BumperSoundFactor, Bump
 End Sub
 
 Sub RandomSoundJetBumperLeftDOF(Bump, DOFevent, DOFstate)
 	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Left_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Left_" & Int(Rnd*22)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 25 * BumperSoundFactor, Bump
 End Sub
 
 Sub RandomSoundJetBumperLow(Bump)
 	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Low_" & Int(Rnd*7)+1,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Low_" & Int(Rnd*28)+1,DOFContactors), BallVel(ActiveBall) / 25 * BumperSoundFactor, Bump
 End Sub
 
 Sub RandomSoundJetBumperLowDOF(Bump, DOFevent, DOFstate)
 	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Low_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Low_" & Int(Rnd*28)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 25 * BumperSoundFactor, Bump
 End Sub
 
 Sub RandomSoundJetBumperUp(Bump)
 	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Up_" & Int(Rnd*7)+1,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Bumpers & "_Jet_Bumper_Up_" & Int(Rnd*25)+1,DOFContactors), BallVel(ActiveBall) / 25 * BumperSoundFactor, Bump
 End Sub
 
 Sub RandomSoundJetBumperUpDOF(Bump, DOFevent, DOFstate)
 	'debug.print "Bumper volume: " & BallVel(ActiveBall) / 50 * BumperSoundFactor
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Up_" & Int(Rnd*7)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 50 * BumperSoundFactor, Bump
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Bumpers & "_Jet_Bumper_Up_" & Int(Rnd*25)+1, DOFevent, DOFstate,DOFContactors), BallVel(ActiveBall) / 25 * BumperSoundFactor, Bump
 End Sub
-
 
 
 '///////////////////////  FLIPPER BATS SOUND SUBROUTINES  ///////////////////////
 '//////////////////////  FLIPPER BATS SOLENOID CORE SOUND  //////////////////////
-Sub RandomSoundFlipperLowerLeftUpFullStroke(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Full_Stroke_" & Int(Rnd*6)+1,DOFFlippers), FlipperLeftLowerHitParm, Flipper
+
+
+Sub RandomSoundFlipperLowerLeftUpFullStrokeDOF(flipper, DOFevent, DOFstate)
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Full_Stroke_" & RndInt(1,10), DOFevent, DOFstate, DOFFlippers), FlipperLeftLowerHitParm, Flipper
 End Sub
 
-Sub RandomSoundFlipperUpperLeftUpFullStroke(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Upper_Left_Up_Full_Stroke_" & Int(Rnd*5)+1,DOFFlippers), FlipperLeftUpperHitParm, Flipper
-End Sub
+	'we have no upper flip sounds so we use lever left sounds
+		Sub RandomSoundFlipperUpperLeftUpFullStroke(flipper)
+			PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Full_Stroke_" & RndInt(1,10),DOFFlippers), FlipperLeftUpperHitParm, Flipper
+		End Sub
 
-Sub RandomSoundFlipperLowerLeftUpDampenedStroke(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Dampened_Stroke_" & Int(Rnd*8)+1,DOFFlippers), FlipperLeftLowerHitParm * 1.2, Flipper
-End Sub
 
-Sub RandomSoundFlipperLowerRightUpFullStroke(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Right_Up_Full_Stroke_" & Int(Rnd*5)+1,DOFFlippers), FlipperRightLowerHitParm, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerRightUpDampenedStroke(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Right_Up_Dampened_Stroke_" & Int(Rnd*8)+1,DOFFlippers), FlipperLeftLowerHitParm * 1.2, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerLeftReflip(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Left_Reflip",DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperUpperLeftReflip(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Upper_Left_Reflip",DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerRightReflip(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Right_Reflip",DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerLeftDown(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Lower_Left_Down_" & Int(Rnd*7)+1,DOFFlippers), FlipperDownSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperUpperLeftDown(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Upper_Left_Down_" & Int(Rnd*6)+1,DOFFlippers), FlipperDownSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerRightDown(flipper)
-	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Right_Down_" & Int(Rnd*7)+1,DOFFlippers), FlipperDownSoundLevel, Flipper
+Sub RandomSoundFlipperLowerLeftUpDampenedStrokeDOF(flipper, DOFevent, DOFstate)
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Dampened_Stroke_" & RndInt(1,23), DOFevent, DOFstate, DOFFlippers), FlipperLeftLowerHitParm * 1.2, Flipper
 End Sub
 
 
-Sub StopAnyFlipperLowerLeftDown()
+
+
+Sub RandomSoundFlipperLowerRightUpFullStrokeDOF(flipper, DOFevent, DOFstate)
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Right_Up_Full_Stroke_" & RndInt(1,11), DOFevent, DOFstate, DOFFlippers), FlipperRightLowerHitParm, Flipper
+End Sub
+
+Sub RandomSoundFlipperLowerRightUpDampenedStrokeDOF(flipper, DOFevent, DOFstate)
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Right_Up_Dampened_Stroke_" & RndInt(1,23), DOFevent, DOFstate, DOFFlippers), FlipperRightLowerHitParm * 1.2, Flipper
+End Sub
+
+
+Sub RandomSoundFlipperLowerLeftReflipDOF(flipper, DOFevent, DOFstate)
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Left_Reflip_" & RndInt(1,3), DOFevent, DOFstate, DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
+End Sub
+
+		Sub RandomSoundFlipperUpperLeftReflip(flipper)
+			PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Left_Reflip_" & RndInt(1,3),DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
+		End Sub
+
+
+
+Sub RandomSoundFlipperLowerRightReflipDOF(flipper, DOFevent, DOFstate)
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Right_Reflip_" & RndInt(1,3), DOFevent, DOFstate, DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
+End Sub
+
+
+
+
+Sub RandomSoundFlipperLowerLeftDownDOF(flipper, DOFevent, DOFstate)
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Left_Down_" & RndInt(1,10), DOFevent, DOFstate, DOFFlippers), FlipperDownSoundLevel, Flipper
+End Sub
+
+'
+		Sub RandomSoundFlipperUpperLeftDown(flipper)
+			PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Left_Down_" & RndInt(1,10),DOFFlippers), FlipperDownSoundLevel, Flipper
+		End Sub
+
+
+Sub RandomSoundFlipperLowerRightDownDOF(flipper, DOFevent, DOFstate)
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Right_Down_" & RndInt(1,11), DOFevent, DOFstate, DOFFlippers), FlipperDownSoundLevel, Flipper
+End Sub
+
+Sub RandomSoundLowerLeftQuickFlipUp()
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Left_QuickFlip_Up_" & RndInt(1,3),DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, LeftFlipper
+End Sub
+
+Sub RandomSoundLowerRightQuickFlipUp()
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Flippers & "_Flipper_Lower_Right_QuickFlip_Up_" & RndInt(1,3),DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, RightFlipper
+End Sub
+
+Sub StopAnyFlipperLowerLeftUp()
 	Dim anyFullStrokeSound
 	Dim anyDampenedStrokeSound
-	For anyFullStrokeSound = 1 to 6
+	For anyFullStrokeSound = 1 to 10
 		StopSound(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Full_Stroke_" & anyFullStrokeSound)
 	Next
-	For anyDampenedStrokeSound = 1 to 8
+	For anyDampenedStrokeSound = 1 to 23
 		StopSound(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Dampened_Stroke_" & anyDampenedStrokeSound)
 	Next
 End Sub
 
 Sub StopAnyFlipperUpperLeftDown()
-	Dim anyFullStrokeSound
-	For anyFullStrokeSound = 1 to 5
-		StopSound(Cartridge_Flippers & "_Flipper_Upper_Left_Up_Full_Stroke_" & anyFullStrokeSound)
-	Next
+	StopAnyFlipperLowerLeftUp()
 End Sub
 
-Sub StopAnyFlipperLowerRightDown()
+Sub StopAnyFlipperLowerRightUp()
 	Dim anyFullStrokeSound
 	Dim anyDampenedStrokeSound
-	For anyFullStrokeSound = 1 to 5
+	For anyFullStrokeSound = 1 to 11
 		StopSound(Cartridge_Flippers & "_Flipper_Lower_Right_Up_Full_Stroke_" & anyFullStrokeSound)
 	Next
-	For anyDampenedStrokeSound = 1 to 8
+	For anyDampenedStrokeSound = 1 to 23
 		StopSound(Cartridge_Flippers & "_Flipper_Lower_Right_Up_Dampened_Stroke_" & anyDampenedStrokeSound)
 	Next
 End Sub
 
-
-Sub FlipperHoldCoilLeft(toggle, flipper)
-	Select Case toggle
-		Case SoundOn
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Flippers & "_Flipper_Hold_Coil_Low_Frequencies_Loop_Lower_Left"), FlipperHoldSoundLevel, flipper
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Flippers & "_Flipper_Hold_Coil_Med_Frequencies_Loop_Lower_Left"), FlipperHoldSoundLevel, flipper
-		Case SoundOff
-			StopSound Cartridge_Flippers & "_Flipper_Hold_Coil_Low_Frequencies_Loop_Lower_Left"
-			StopSound Cartridge_Flippers & "_Flipper_Hold_Coil_Med_Frequencies_Loop_Lower_Left"
-	End Select
+Sub StopAnyFlipperLowerLeftDown()
+	Dim anyFullDownSound
+	For anyFullDownSound = 1 to 10
+		StopSound(Cartridge_Flippers & "_Flipper_Lower_Left_Down_" & anyFullDownSound)
+	Next
 End Sub
 
-Sub FlipperHoldCoilRight(toggle, flipper)
-	Select Case toggle
-		Case SoundOn
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Flippers & "_Flipper_Hold_Coil_Low_Frequencies_Loop_Lower_Right"), FlipperHoldSoundLevel, flipper
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Flippers & "_Flipper_Hold_Coil_Med_Frequencies_Loop_Lower_Right"), FlipperHoldSoundLevel, flipper
-		Case SoundOff
-			StopSound Cartridge_Flippers & "_Flipper_Hold_Coil_Low_Frequencies_Loop_Lower_Right"
-			StopSound Cartridge_Flippers & "_Flipper_Hold_Coil_Med_Frequencies_Loop_Lower_Right"
-	End Select
+Sub StopAnyFlipperLowerRightDown()
+	Dim anyFullDownSound
+	For anyFullDownSound = 1 to 10
+		StopSound(Cartridge_Flippers & "_Flipper_Lower_Right_Down_" & anyFullDownSound)
+	Next
 End Sub
 
-
-
-Sub RandomSoundFlipperLowerLeftUpFullStrokeDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Full_Stroke_" & Int(Rnd*6)+1, DOFevent, DOFstate, DOFFlippers), FlipperLeftLowerHitParm, Flipper
-End Sub
-
-Sub RandomSoundFlipperUpperLeftUpFullStrokeDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Upper_Left_Up_Full_Stroke_" & Int(Rnd*5)+1, DOFevent, DOFstate, DOFFlippers), FlipperLeftUpperHitParm, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerLeftUpDampenedStrokeDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Left_Up_Dampened_Stroke_" & Int(Rnd*8)+1, DOFevent, DOFstate, DOFFlippers), FlipperLeftLowerHitParm * 1.2, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerRightUpFullStrokeDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Right_Up_Full_Stroke_" & Int(Rnd*5)+1, DOFevent, DOFstate, DOFFlippers), FlipperRightLowerHitParm, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerRightUpDampenedStrokeDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Right_Up_Dampened_Stroke_" & Int(Rnd*8)+1, DOFevent, DOFstate, DOFFlippers), FlipperRightLowerHitParm * 1.2, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerLeftReflipDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Left_Reflip", DOFevent, DOFstate, DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperUpperLeftReflipDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Upper_Left_Reflip", DOFevent, DOFstate, DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerRightReflipDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Right_Reflip", DOFevent, DOFstate, DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerLeftDownDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Left_Down_" & Int(Rnd*7)+1, DOFevent, DOFstate, DOFFlippers), FlipperDownSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperUpperLeftDownDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Upper_Left_Down_" & Int(Rnd*6)+1, DOFevent, DOFstate, DOFFlippers), FlipperDownSoundLevel, Flipper
-End Sub
-
-Sub RandomSoundFlipperLowerRightDownDOF(flipper, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Flippers & "_Flipper_Lower_Right_Down_" & Int(Rnd*7)+1, DOFevent, DOFstate, DOFFlippers), FlipperDownSoundLevel, Flipper
-End Sub
 
 
 '///////////////////////  FLIPPER BATS BALL COLLIDE SOUND  //////////////////////
@@ -15461,38 +15800,12 @@ Sub LeftFlipper1_Collide(parm)	'Note: no live catch added here for upper flipper
 End Sub
 
 Sub LeftFlipperMini_Collide(parm)	'Note: no live catch added here for upper flipper
-'		If parm => 22 Then
-'		' Strong hit safe values boundary
-'		' Flipper stroke dampened
-'		FlipperLeftUpperHitParm = FlipperUpSoundLevel * 0.1
-'	Else
-'		If parm =< 1 Then 
-'			' Weak hit safe values boundary
-'			' Flipper stroke full
-'			FlipperLeftUpperHitParm = FlipperUpSoundLevel
-'		Else
-'			' Fully modulated hit
-'			FlipperLeftUpperHitParm = FlipperUpSoundLevel * (1-(parm/25))
-'		End If
-'	End If
+
 	RandomSoundRubberFlipper(parm)
 End Sub
 
 Sub RightFlipperMini_Collide(parm)	'Note: no live catch added here for upper flipper
-'		If parm => 22 Then
-'		' Strong hit safe values boundary
-'		' Flipper stroke dampened
-'		FlipperLeftUpperHitParm = FlipperUpSoundLevel * 0.1
-'	Else
-'		If parm =< 1 Then 
-'			' Weak hit safe values boundary
-'			' Flipper stroke full
-'			FlipperLeftUpperHitParm = FlipperUpSoundLevel
-'		Else
-'			' Fully modulated hit
-'			FlipperLeftUpperHitParm = FlipperUpSoundLevel * (1-(parm/25))
-'		End If
-'	End If
+
 	RandomSoundRubberFlipper(parm)
 End Sub
 
@@ -15516,453 +15829,101 @@ Sub RightFlipperCollide(parm)
 End Sub
 
 Sub RandomSoundRubberFlipper(parm)
- 	dim finalspeed
-  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
- 	If finalspeed > 5 then		
-		PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Flipper_Hit_Hard_" & Int(Rnd*9)+1), parm * RubberFlipperSoundFactor
-	End if
-	If finalspeed <= 5 then
-		PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Flipper_Hit_Soft_" & Int(Rnd*7)+1), parm * RubberFlipperSoundFactor
- 	End If	
-End Sub
-
-
-'////////////////////////////  AUTO-PLUNGER SOUNDS  /////////////////////////////
-Sub RandomSoundAutoPlunger()
-		PlaySoundAtLevelStatic SoundFX(Cartridge_Kickers & "_Auto_Launch_Coil_" & Int(Rnd*5)+1, DOFContactors), AutoPlungerSoundLevel, TriggerAutoPlunger
-End Sub
-
-Sub RandomSoundAutoPlungerDOF(AutoPlunger, DOFevent, DOFstate)
-		PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Kickers & "_Auto_Launch_Coil_" & Int(Rnd*5)+1, DOFevent, DOFstate, DOFContactors), AutoPlungerSoundLevel, AutoPlunger
+'	debug.print "flipper coll " & parm
+	PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Flipper_Hit_" & Int(Rnd*7)+1), parm / 2 * RubberFlipperSoundFactor
 End Sub
 
 
 '////////////////////////////  SCOOP KICKER SOUNDS  /////////////////////////////
 Sub RandomSoundScoopLeftEjectHighVelocity()
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Left_Eject_High_Velocity_" & Int(Rnd*3)+1), ScoopKickerSoundLevel, LeftScoop
+'	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Left_Eject_High_Velocity_" & Int(Rnd*3)+1), ScoopKickerSoundLevel, LeftScoop
+	PlaySoundAtLevelStatic (Cartridge_Kickers & "_Scoop_Kickout_Cellar_" & Int(Rnd*3)+1), ScoopKickerSoundLevel, LeftScoop
+	SoundCellarKickoutBallDrop(LeftScoop)
 End Sub
 
 Sub RandomSoundScoopLeftEjectNormalVelocity(prim)
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Left_Eject_Normal_Velocity_" & Int(Rnd*5)+1), ScoopKickerSoundLevel, prim
+'	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Left_Eject_Normal_Velocity_" & Int(Rnd*5)+1), ScoopKickerSoundLevel, prim
+	PlaySoundAtLevelStatic (Cartridge_Kickers & "_Scoop_Kickout_Cellar_" & Int(Rnd*3)+1), ScoopKickerSoundLevel, prim
 End Sub
 
 Sub RandomSoundScoopRightEjectHighVelocity()
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Right_Eject_High_Velocity_" & Int(Rnd*3)+1), ScoopKickerSoundLevel, RightScoop
+'	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Right_Eject_High_Velocity_" & Int(Rnd*3)+1), ScoopKickerSoundLevel, RightScoop
+	PlaySoundAtLevelStatic (Cartridge_Kickers & "_Scoop_Kickout_Cellar_" & Int(Rnd*3)+1), ScoopKickerSoundLevel, RightScoop
+	SoundCellarKickoutBallDrop(RightScoop)
 End Sub
 
 Sub RandomSoundScoopRightEjectNormalVelocity()
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Right_Eject_Normal_Velocity_" & Int(Rnd*5)+1), ScoopKickerSoundLevel, RightScoop
+'	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Right_Eject_Normal_Velocity_" & Int(Rnd*5)+1), ScoopKickerSoundLevel, RightScoop
+	PlaySoundAtLevelStatic (Cartridge_Kickers & "_Scoop_Kickout_Cellar_" & Int(Rnd*3)+1), ScoopKickerSoundLevel, RightScoop
 End Sub
 
+
 Sub RandomSoundScoopLeftEjectHighVelocityDOF(ScoopKicker, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Scoop_Left_Eject_High_Velocity_" & Int(Rnd*3)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Scoop_Left_Eject_High_Velocity_" & Int(Rnd*3)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Kickers & "_Scoop_Kickout_Cellar_" & Int(Rnd*3)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+	SoundCellarKickoutBallDrop(ScoopKicker)
 End Sub
 
 Sub RandomSoundScoopLeftEjectNormalVelocityDOF(ScoopKicker, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Scoop_Left_Eject_Normal_Velocity_" & Int(Rnd*5)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Scoop_Left_Eject_Normal_Velocity_" & Int(Rnd*5)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Kickers & "_Scoop_Kickout_Cellar_" & Int(Rnd*3)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
 End Sub
 
 Sub RandomSoundScoopRightEjectHighVelocityDOF(ScoopKicker, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Scoop_Right_Eject_High_Velocity_" & Int(Rnd*3)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Scoop_Right_Eject_High_Velocity_" & Int(Rnd*3)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSounwdLevel, ScoopKicker
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Kickers & "_Scoop_Kickout_Cellar_" & Int(Rnd*3)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+	SoundCellarKickoutBallDrop(ScoopKicker)
 End Sub
 
 Sub RandomSoundScoopRightEjectNormalVelocityDOF(ScoopKicker, DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Scoop_Right_Eject_Normal_Velocity_" & Int(Rnd*5)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Scoop_Right_Eject_Normal_Velocity_" & Int(Rnd*5)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
+	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Kickers & "_Scoop_Kickout_Cellar_" & Int(Rnd*3)+1, DOFevent, DOFstate, DOFPulse), ScoopKickerSoundLevel, ScoopKicker
 End Sub
 
 
 '//////////////////////////  SCOOP ENTER / HIT SOUNDS  //////////////////////////
 Sub RandomSoundScoopLeftEnter(obj)
- 	dim finalspeed
+
+	dim finalspeed
   	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
- 	If finalspeed > 10 then
-		RandomSoundScoopLeftEnterFast(obj)
-		Else 
- 		RandomSoundScoopLeftEnterSlow(obj)
- 	End If	
+	PlaySoundAtLevelStatic (Cartridge_Kickers & "_Scoop_Left_Cellar_Enter_" & Int(Rnd*4)+1), ScoopEnterSoundLevel * finalspeed/40, obj
 End Sub
 
 Sub RandomSoundScoopRightEnter(obj)
+
  	dim finalspeed
   	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
- 	If finalspeed > 10 then
-		RandomSoundScoopRightEnterFast(obj)
-		Else 
- 		RandomSoundScoopRightEnterSlow(obj)
- 	End If	
+	PlaySoundAtLevelStatic (Cartridge_Kickers & "_Scoop_Right_Cellar_Enter_" & Int(Rnd*5)+1), ScoopEnterSoundLevel * finalspeed/40, obj
 End Sub
 
 
-Sub RandomSoundScoopHitStrong(Scoop)
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Hit_Hard_" & Int(Rnd*2)+1), ScoopHitSoundLevel, Scoop
-End Sub
-	
-Sub RandomSoundScoopHitSoft(Scoop)
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Hit_Soft_" & Int(Rnd*2)+1), ScoopHitSoundLevel, Scoop
-End Sub
-
-Sub RandomSoundScoopLeftEnterFast(obj)
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Left_Enter_Fast_" & Int(Rnd*5)+1), ScoopEntrySoundLevel, obj
-End Sub
-
-Sub RandomSoundScoopLeftEnterSlow(obj)
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Left_Enter_Slow_" & Int(Rnd*6)+1), ScoopEntrySoundLevel, obj
-End Sub
-
-Sub RandomSoundScoopRightEnterFast(obj)
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Right_Enter_Fast_" & Int(Rnd*5)+1), ScoopEntrySoundLevel, obj
-End Sub
-
-Sub RandomSoundScoopRightEnterSlow(obj)
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Scoop_Right_Enter_Slow_" & Int(Rnd*5)+1), ScoopEntrySoundLevel, obj
-End Sub
-
-
-'////////////////////////////////  DROP TARGETS  ////////////////////////////////
-'///////////////////////////  DROP TARGET MAIN CALLS  ///////////////////////////
-Sub DropTarget1_Sound(toggle)
-	Select Case toggle
-		Case TargetUp
-			DropTarget1_Reset_Coil()
-		Case TargetDown
-			DropTarget1_Knockdown_Coil()
-	End Select
-End Sub
-
-Sub DropTarget2_Sound(toggle)
-	Select Case toggle
-		Case TargetUp
-			DropTarget2_Reset_Coil()
-		Case TargetDown
-			DropTarget2_Knockdown_Coil()
-	End Select
-End Sub
-
-Sub DropTarget3_Sound(toggle)
-	Select Case toggle
-		Case TargetUp
-			DropTarget3_Reset_Coil()
-		Case TargetDown
-			DropTarget3_Knockdown_Coil()
-	End Select
-End Sub
-
-
-'////////////////////////  DROP TARGET RESET COIL CALLS  ////////////////////////
-Sub DropTarget1_Reset_Coil()
-	If DTWasDropped(1) Then
-		'Drop Target is Down
-'		debug.print "DropTarget1 Reset Coil (Target was down)"
-		SoundDropTarget1_ResetCoil_When_Target_Down'_DOF 110, DOFPulse
-	Else
-		'Drop Target is Up
-'		debug.print "DropTarget1 Reset Coil (Target was up)"
-		SoundDropTarget1_ResetCoil_When_Target_Up '_DOF 110, DOFPulse
-	End If
-End Sub
-
-Sub DropTarget2_Reset_Coil()
-	If DTWasDropped(2) Then
-		'Drop Target is Down
-		'debug.print "DropTarget2 Reset Coil (Target was down)"
-		SoundDropTarget2_ResetCoil_When_Target_Down_DOF 110, DOFPulse
-	Else
-		'Drop Target is Up
-		'debug.print "DropTarget2 Reset Coil (Target was up)"
-		SoundDropTarget2_ResetCoil_When_Target_Up_DOF 110, DOFPulse
-	End If
-End Sub
-
-Sub DropTarget3_Reset_Coil()
-	If DTWasDropped(3) Then
-		'Drop Target is Down
-		'debug.print "DropTarget3 Reset Coil (Target was down)"
-		SoundDropTarget3_ResetCoil_When_Target_Down '_DOF 110, DOFPulse
-	Else
-		'Drop Target is Up
-		'debug.print "DropTarget3 Reset Coil (Target was up)"
-		SoundDropTarget3_ResetCoil_When_Target_Up '_DOF 110, DOFPulse
-	End If
-End Sub
-
-
-'//////////////////////////  DROP TARGET RESET COILS  ///////////////////////////
-Sub SoundDropTarget1_ResetCoil_When_Target_Up()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_1_Reset_Coil_When_Target_Up_" & Int(Rnd*4)+1), DropTargetResetCoilWhenUpSoundLevel, TargetScavenge1p
-End Sub
-
-Sub SoundDropTarget2_ResetCoil_When_Target_Up()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_2_Reset_Coil_When_Target_Up_" & Int(Rnd*4)+1), DropTargetResetCoilWhenUpSoundLevel, TargetScavenge2p
-End Sub
-
-Sub SoundDropTarget3_ResetCoil_When_Target_Up()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_3_Reset_Coil_When_Target_Up_" & Int(Rnd*4)+1), DropTargetResetCoilWhenUpSoundLevel, TargetScavenge3p
-End Sub
-
-Sub SoundDropTarget1_ResetCoil_When_Target_Down()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_1_Reset_Coil_When_Target_Down_" & Int(Rnd*4)+1), DropTargetResetCoilWhenDownSoundLevel, TargetScavenge1p
-End Sub
-
-Sub SoundDropTarget2_ResetCoil_When_Target_Down()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_2_Reset_Coil_When_Target_Down_" & Int(Rnd*4)+1), DropTargetResetCoilWhenDownSoundLevel, TargetScavenge2p
-End Sub
-
-Sub SoundDropTarget3_ResetCoil_When_Target_Down()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_3_Reset_Coil_When_Target_Down_" & Int(Rnd*4)+1), DropTargetResetCoilWhenDownSoundLevel, TargetScavenge3p
-End Sub
-
-
-Sub SoundDropTarget1_ResetCoil_When_Target_Up_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_1_Reset_Coil_When_Target_Up_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetResetCoilWhenUpSoundLevel, TargetScavenge1p
-End Sub
-
-Sub SoundDropTarget2_ResetCoil_When_Target_Up_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_2_Reset_Coil_When_Target_Up_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetResetCoilWhenUpSoundLevel, TargetScavenge2p
-End Sub
-
-Sub SoundDropTarget3_ResetCoil_When_Target_Up_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_3_Reset_Coil_When_Target_Up_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetResetCoilWhenUpSoundLevel, TargetScavenge3p
-End Sub
-
-Sub SoundDropTarget1_ResetCoil_When_Target_Down_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_1_Reset_Coil_When_Target_Down_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetResetCoilWhenDownSoundLevel, TargetScavenge1p
-End Sub
-
-Sub SoundDropTarget2_ResetCoil_When_Target_Down_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_2_Reset_Coil_When_Target_Down_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetResetCoilWhenDownSoundLevel, TargetScavenge2p
-End Sub
-
-Sub SoundDropTarget3_ResetCoil_When_Target_Down_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_3_Reset_Coil_When_Target_Down_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetResetCoilWhenDownSoundLevel, TargetScavenge3p
+Sub SoundCellarKickoutBallDrop(prim)
+	PlaySoundAtLevelStatic (Cartridge_Kickers & "_Scoop_BallDrop_After_Kickout_" & Int(Rnd*2)+1), KickouBallDropSoundLevel, prim
 End Sub
 
 
 
-Sub SoundDropTarget1_ResetCoil_Hold(toggle)
-	Select Case toggle
-		Case SoundOn
-			'debug.print "DropTarget1 Reset Coil Hold - SoundOn"
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Targets & "_Drop_Target_1_Reset_Coil_Hold_Low_Harmonics_Loop"), DropTargetResetCoilHoldSoundLevel * 0.2, DropTarget1
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Targets & "_Drop_Target_1_Reset_Coil_Hold_Med_Harmonics_Loop"), DropTargetResetCoilHoldSoundLevel * 0.2, DropTarget1
-		Case SoundOff
-			'debug.print "DropTarget1 Reset Coil Hold - SoundOff"
-			StopSound Cartridge_Targets & "_Drop_Target_1_Reset_Coil_Hold_Low_Harmonics_Loop"
-			StopSound Cartridge_Targets & "_Drop_Target_1_Reset_Coil_Hold_Med_Harmonics_Loop"
-	End Select
+
+'/////////////////////  DROP TARGET RESET SOLENOID SOUNDS  //////////////////////
+Sub SoundDropTarget_Release(prim)
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Targets & "_Drop_Target_1Bank_Reset_Up_" & Int(Rnd*8)+1,DOFContactors), DropTargetReleaseSoundLevel, prim
 End Sub
 
-Sub SoundDropTarget2_ResetCoil_Hold(toggle)
-	Select Case toggle
-		Case SoundOn
-			'debug.print "DropTarget2 Reset Coil Hold - SoundOn"
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Targets & "_Drop_Target_2_Reset_Coil_Hold_Low_Harmonics_Loop"), DropTargetResetCoilHoldSoundLevel * 0.5, DropTarget2
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Targets & "_Drop_Target_2_Reset_Coil_Hold_Med_Harmonics_Loop"), DropTargetResetCoilHoldSoundLevel * 0.5, DropTarget2
-		Case SoundOff
-			'debug.print "DropTarget2 Reset Coil Hold - SoundOff"
-			StopSound Cartridge_Targets & "_Drop_Target_2_Reset_Coil_Hold_Low_Harmonics_Loop"
-			StopSound Cartridge_Targets & "_Drop_Target_2_Reset_Coil_Hold_Med_Harmonics_Loop"
-	End Select
+Sub RandomSoundDropTargetLeft(prim)
+	PlaySoundAtLevelStatic SoundFX(Cartridge_Targets & "_Drop_Target_3Bank_Reset_Up_" & Int(Rnd*6)+1,DOFContactors), DropTargetReleaseSoundLevel, prim
 End Sub
 
-Sub SoundDropTarget3_ResetCoil_Hold(toggle)
-	Select Case toggle
-		Case SoundOn
-			'debug.print "DropTarget3 Reset Coil Hold - SoundOn"
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Targets & "_Drop_Target_3_Reset_Coil_Hold_Low_Harmonics_Loop"), DropTargetResetCoilHoldSoundLevel * 0.7, DropTarget3
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Targets & "_Drop_Target_3_Reset_Coil_Hold_Med_Harmonics_Loop"), DropTargetResetCoilHoldSoundLevel * 0.7, DropTarget3
-		Case SoundOff
-			'debug.print "DropTarget3 Reset Coil Hold - SoundOff"
-			StopSound Cartridge_Targets & "_Drop_Target_3_Reset_Coil_Hold_Low_Harmonics_Loop"
-			StopSound Cartridge_Targets & "_Drop_Target_3_Reset_Coil_Hold_Med_Harmonics_Loop"
-	End Select
-End Sub
-
-
-'//////////////////////  DROP TARGET KNOCKDOWN COIL CALLS  //////////////////////
-Sub DropTarget1_Knockdown_Coil()
-	If DropTarget1.isDropped = 1 Then
-		'Drop Target is Down
-		'debug.print "DropTarget1 Knockdown Coil (Target was down)"
-		SoundDropTarget1_KnockDownCoil_When_Target_Down_DOF 110, DOFPulse
-	Else
-		'Drop Target is Up
-		'debug.print "DropTarget1 Knockdown Coil (Target was up)"
-		SoundDropTarget1_KnockDownCoil_When_Target_Up_DOF 110, DOFPulse
-		SoundDropTarget1_Release()
-	End If
-End Sub
-
-Sub DropTarget2_Knockdown_Coil()
-	If DropTarget2.isDropped = 1 Then
-		'Drop Target is Down
-		'debug.print "DropTarget2 Knockdown Coil (Target was down)"
-		SoundDropTarget2_KnockDownCoil_When_Target_Down_DOF 110, DOFPulse
-	Else
-		'Drop Target is Up
-		'debug.print "DropTarget2 Knockdown Coil (Target was up)"
-		SoundDropTarget2_KnockDownCoil_When_Target_Up_DOF 110, DOFPulse
-		SoundDropTarget2_Release()
-	End If
-End Sub
-
-Sub DropTarget3_Knockdown_Coil()
-	If DropTarget3.isDropped = 1 Then
-		'Drop Target is Down
-		'debug.print "DropTarget3 Knockdown Coil (Target was down)"
-		SoundDropTarget3_KnockDownCoil_When_Target_Down_DOF 110, DOFPulse
-	Else
-		'Drop Target is Up
-		'debug.print "DropTarget3 Knockdown Coil (Target was up)"
-		SoundDropTarget3_KnockDownCoil_When_Target_Up_DOF 110, DOFPulse
-		SoundDropTarget3_Release()
-	End If
-End Sub
-
-
-'////////////////////////  DROP TARGET KNOCKDOWN COILS  /////////////////////////
-Sub SoundDropTarget1_KnockDownCoil_When_Target_Up()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_1_Knockdown_Coil_When_Target_Up_" & Int(Rnd*4)+1), DropTargetKnockDownCoilSoundLevel, DropTarget1
-End Sub
-
-Sub SoundDropTarget2_KnockDownCoil_When_Target_Up()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_2_Knockdown_Coil_When_Target_Up_" & Int(Rnd*4)+1), DropTargetKnockDownCoilSoundLevel, DropTarget2
-End Sub
-
-Sub SoundDropTarget3_KnockDownCoil_When_Target_Up()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_3_Knockdown_Coil_When_Target_Up_" & Int(Rnd*4)+1), DropTargetKnockDownCoilSoundLevel, DropTarget3
-End Sub
-
-Sub SoundDropTarget1_KnockDownCoil_When_Target_Down()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_1_Knockdown_Coil_When_Target_Down_" & Int(Rnd*4)+1), DropTargetKnockDownCoilSoundLevel, DropTarget1
-End Sub
-
-Sub SoundDropTarget2_KnockDownCoil_When_Target_Down()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_2_Knockdown_Coil_When_Target_Down_" & Int(Rnd*4)+1), DropTargetKnockDownCoilSoundLevel, DropTarget2
-End Sub
-
-Sub SoundDropTarget3_KnockDownCoil_When_Target_Down()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_3_Knockdown_Coil_When_Target_Down_" & Int(Rnd*4)+1), DropTargetKnockDownCoilSoundLevel, DropTarget3
-End Sub
-
-
-Sub SoundDropTarget3_KnockDownCoil_When_Target_Down_Noise()
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_3_Knockdown_Coil_When_Target_Down_Noise"), DropTargetKnockDownCoilSoundLevel, DropTarget3
-End Sub
-
-
-Sub SoundDropTarget1_KnockDownCoil_When_Target_Up_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_1_Knockdown_Coil_When_Target_Up_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetKnockDownCoilSoundLevel, DropTarget1
-End Sub
-
-Sub SoundDropTarget2_KnockDownCoil_When_Target_Up_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_2_Knockdown_Coil_When_Target_Up_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetKnockDownCoilSoundLevel, DropTarget2
-End Sub
-
-Sub SoundDropTarget3_KnockDownCoil_When_Target_Up_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_3_Knockdown_Coil_When_Target_Up_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetKnockDownCoilSoundLevel, DropTarget3
-End Sub
-
-Sub SoundDropTarget1_KnockDownCoil_When_Target_Down_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_1_Knockdown_Coil_When_Target_Down_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetKnockDownCoilSoundLevel, DropTarget1
-End Sub
-
-Sub SoundDropTarget2_KnockDownCoil_When_Target_Down_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_2_Knockdown_Coil_When_Target_Down_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetKnockDownCoilSoundLevel, DropTarget2
-End Sub
-
-Sub SoundDropTarget3_KnockDownCoil_When_Target_Down_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_3_Knockdown_Coil_When_Target_Down_" & Int(Rnd*4)+1, DOFevent, DOFstate, DOFDropTargets), DropTargetKnockDownCoilSoundLevel, DropTarget3
-End Sub
-
-
-Sub SoundDropTarget3_KnockDownCoil_When_Target_Down_Noise_DOF(DOFevent, DOFstate)
-	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Targets & "_Drop_Target_3_Knockdown_Coil_When_Target_Down_Noise", DOFevent, DOFstate, DOFDropTargets), DropTargetKnockDownCoilSoundLevel, DropTarget3
-End Sub
-
-
-'/////////////////////////  DROP TARGET RELEASE SOUNDS  /////////////////////////
-Sub SoundDropTarget1_Release()
-	'debug.print "DropTarget1 Release"
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_1_Release_When_Target_Up_" & Int(Rnd*2)+1), DropTargetReleaseSoundLevel, TargetScavenge1p
-End Sub
-
-Sub SoundDropTarget2_Release()
-	'debug.print "DropTarget2 Release"
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_2_Release_When_Target_Up_" & Int(Rnd*2)+1), DropTargetReleaseSoundLevel, TargetScavenge2p
-End Sub
-
-Sub SoundDropTarget3_Release()
-	'debug.print "DropTarget3 Release"
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_3_Release_When_Target_Up_" & Int(Rnd*2)+1), DropTargetReleaseSoundLevel, TargetScavenge3p
-End Sub
 
 
 '///////////////////////////  DROP TARGET HIT SOUNDS  ///////////////////////////
-Sub SoundDropTarget1_Hit()
-	'debug.print "DropTarget1 Hit"
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_Hit_" & Int(Rnd*4)+1), DropTargetHitSoundLevel, TargetScavenge1p
+Sub SoundDropTarget(prim)
+	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_1Bank_Release_Down_" & Int(Rnd*2)+1), DropTargetHitSoundLevel, prim
 End Sub
 
-Sub SoundDropTarget2_Hit()
-	'debug.print "DropTarget2 Hit"
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_Hit_" & Int(Rnd*4)+1), DropTargetHitSoundLevel, TargetScavenge2p
+Sub SoundDropTarget3Bank(prim)
+	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_3Bank_Release_Down_" & Int(Rnd*6)+1), DropTargetHitSoundLevel, prim
 End Sub
 
-Sub SoundDropTarget3_Hit()
-	'debug.print "DropTarget3 Hit"
-	PlaySoundAtLevelStatic (Cartridge_Targets & "_Drop_Target_Hit_" & Int(Rnd*4)+1), DropTargetHitSoundLevel, TargetScavenge3p
-End Sub
-
-
-Sub DropTargetBallCollides_Hit(idx)
-	'debug.print "DropTargetCollides_Hit: " & idx
-	'debug.print "Ball Velocity divised by 25:" & BallVel(ActiveBall)
-	'debug.print "Ball Velocity divised by 25:" & BallVel(ActiveBall) / 25
-	PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Rollover_Lane_Wall_" & Int(Rnd*2)+1), DropTargetHitSoundLevel * 0.01 * BallVel(ActiveBall) / 25
-End Sub
-
-
-'/////////////////////////  DROP TARGET SPECIAL TIMERS  /////////////////////////
-Sub BallLock1HoldTimer_Timer()
-	BallLock1HoldTimer.Enabled=False
-	SoundDropTarget1_ResetCoil_Hold(SoundOff)
-	SoundDropTarget2_ResetCoil_Hold(SoundOff)
-	BallLockDT3Timer.Enabled=True
-	'DT2_Collide.Enabled = 0
-End Sub
-
-Sub BallLock2HoldTimer_Timer()
-	BallLock2HoldTimer.Enabled=False
-	SoundDropTarget1_ResetCoil_Hold(SoundOff)
-	SoundDropTarget2_ResetCoil_Hold(SoundOff)
-	SoundDropTarget3_ResetCoil_Hold(SoundOff)
-	BallLockDT2Timer.Enabled=True
-	'DT2_Collide.Enabled = 0
-	'DT3_Collide.Enabled = 0
-End Sub
-
-Sub BallLockDT3Timer_Timer()
-	BallLockDT3Timer.Enabled=False
-	BallLockDT2Timer.Enabled=True
-	DropTarget3_Sound(TargetDown)
-End Sub
-
-Sub BallLockDT2Timer_Timer()
-	BallLockDT2Timer.Enabled=False
-	BallLockDT1Timer.Enabled=True
-	DropTarget2_Sound(TargetUp)
-	
-	'/Fleep Ball Nudge
-	NudgeDropTarget2_Locked_Ball_Reset()
-	NudgeDropTarget3_Locked_Ball_Reset()
-	'/
-	
-End Sub
-
-Sub BallLockDT1Timer_Timer()
-	BallLockDT1Timer.Enabled=False
-	DropTarget1_Sound(TargetUp)
-End Sub
 
 
 '///////////////////////////////////  GATES  ////////////////////////////////////
@@ -15973,111 +15934,52 @@ End Sub
 Sub GateLTrigger_Hit()
 	if activeball.velx > 0 Then
 'debug.print "passing left"
-		PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Through"), GateFlapSoundLevel, Gate004
+'		PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Through"), GateFlapSoundLevel, Gate004
+		PlaySoundAtLevelStatic (Cartridge_Gates & "_Bracket_Gate_1"), Switch_Gate_SoundLevel * 0.3, Gate004
 	else
 		if Gate004.collidable Then
 'debug.print "Left closed"
-			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Closed_Hit_" & Int(Rnd*8)+1), GateHitSoundLevel, Gate004
+'			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Closed_Hit_" & Int(Rnd*8)+1), GateHitSoundLevel, Gate004
+			Stopsound Cartridge_Gates & "_Bracket_Gate_1"
+			PlaySoundAtLevelStatic (Cartridge_Gates & "_Oneway_Ball_Gate_" & Int(Rnd*3)+1), Switch_Gate_SoundLevel * 0.3, Gate004
 		Else
 'debug.print "Left open"
-			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Through"), GateFlapSoundLevel, Gate004
+'			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Through"), GateFlapSoundLevel, Gate004
+			PlaySoundAtLevelStatic (Cartridge_Gates & "_Bracket_Gate_1"), Switch_Gate_SoundLevel * 0.3, Gate004
 		end if
 	end if
 End Sub
 
 
-
-Sub GateL_OpenSound()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Energized_" & Int(Rnd*2)+1), GateFlapSoundLevel, Gate004
-	GateL_CoilHoldSound(SoundOn)
-End Sub
-
-Sub GateL_CloseSound()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Left_Deenergized"), GateFlapSoundLevel, Gate004
-	GateL_CoilHoldSound(SoundOff)
-End Sub
-
-
-
-'Sub GateR_Hit()
-'	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, GateR
-'End Sub
 
 Sub GateRTrigger_Hit()
 	if activeball.velx < 0 Then
 'debug.print "passing right"
-		PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, Gate001
+'		PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, Gate001
+		PlaySoundAtLevelStatic (Cartridge_Gates & "_Bracket_Gate_2"), Switch_Gate_SoundLevel * 0.3, Gate001
 	else
 		if Gate001.collidable Then
 'debug.print "Right closed"
-			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Closed_Hit_" & Int(Rnd*8)+1), GateHitSoundLevel, Gate001
+'			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Closed_Hit_" & Int(Rnd*8)+1), GateHitSoundLevel, Gate001
+			Stopsound Cartridge_Gates & "_Bracket_Gate_2"
+			PlaySoundAtLevelStatic (Cartridge_Gates & "_Oneway_Ball_Gate_" & Int(Rnd*3)+1), Switch_Gate_SoundLevel * 0.3, Gate001
 		Else
 'debug.print "Right open"
-			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, Gate001
+'			PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Through"), GateFlapSoundLevel, Gate001
+			PlaySoundAtLevelStatic (Cartridge_Gates & "_Bracket_Gate_2"), Switch_Gate_SoundLevel * 0.3, Gate001
 		end if
 	end if
 End Sub
 
 
 
-Sub GateR_OpenSound()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Energized_" & Int(Rnd*2)+1), GateFlapSoundLevel, Gate001
-	GateR_CoilHoldSound(SoundOn)
-End Sub
-
-Sub GateR_CloseSound()
-	PlaySoundAtLevelStatic (Cartridge_Gates & "_Gate_Right_Deenergized"), GateFlapSoundLevel, Gate001
-	GateR_CoilHoldSound(SoundOff)
-End Sub
-
-
-
-Sub GateR_CoilHoldSound(toggle)
-	Select Case toggle
-		Case SoundOn
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Gates & "_Gate_Right_Hold_Loop"), GateCoilHoldSoundLevel, Gate001
-		Case SoundOff
-			StopSound Cartridge_Gates & "_Gate_Right_Hold_Loop"
-	End Select
-End Sub
-
-Sub GateL_CoilHoldSound(toggle)
-	Select Case toggle
-		Case SoundOn
-			PlaySoundAtLevelExistingStaticLoop (Cartridge_Gates & "_Gate_Left_Hold_Loop"), GateCoilHoldSoundLevel, Gate004
-		Case SoundOff
-			StopSound Cartridge_Gates & "_Gate_Left_Hold_Loop"
-	End Select
-End Sub
-
-
-'
-'Sub GateL_OpenSoundDOF(DOFevent, DOFstate)
-'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Left_Energized_" & Int(Rnd*2)+1, DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateL
-'	GateL_CoilHoldSound(SoundOn)
-'End Sub
-'
-'Sub GateL_CloseSoundDOF(DOFevent, DOFstate)
-'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Left_Deenergized", DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateL
-'	GateL_CoilHoldSound(SoundOff)
-'End Sub
-'
-'Sub GateR_OpenSoundDOF(DOFevent, DOFstate)
-'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Right_Energized_" & Int(Rnd*2)+1, DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateR
-'	GateR_CoilHoldSound(SoundOn)
-'End Sub
-'
-'Sub GateR_CloseSoundDOF(DOFevent, DOFstate)
-'	PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Gates & "_Gate_Right_Deenergized", DOFevent, DOFstate, DOFContactors), GateFlapSoundLevel, GateR
-'	GateR_CoilHoldSound(SoundOff)
-'End Sub
 
 
 '//////////////////////////////////  SHAKER  ////////////////////////////////////
 'DOF numbers for shaker intensity
-'126 - Shaker Intensity 1
-'127 - Shaker Intensity 2
-'128 - Shaker Intensity 3
+'152 - Shaker Intensity 1
+'152 - Shaker Intensity 2
+'152 - Shaker Intensity 3
 
 '//  Possible Shaker Configurations (determined by const ShakerMotor in sound options above)
 '//  0 = Shaker motor completely disabled (DOF+Sound/SSF)
@@ -16085,7 +15987,15 @@ End Sub
 '//  2 = Shaker motor enabled for DOF only
 '//  3 = Shaker motor enabled for DOF + Sound/SSF
 
+'SoundShakerDOF soundon, dofon
+'SoundShakerDOF soundoff, dofoff
+'ShakerIntensity = "" : SoundShakerDOF soundon, dofon
+'SoundShakerDOF soundoff, dofoff
+
+
+
 Sub SoundShakerDOF(toggle, DOFstate)
+	debug.print "shaker: " & toggle
 	Select Case ShakerMotor
 		Case 0
 		Case 1
@@ -16093,104 +16003,69 @@ Sub SoundShakerDOF(toggle, DOFstate)
 				Case SoundOn
 					Select Case ShakerIntensity
 						Case "Low"
-							PlaySoundAtLevelExistingStaticLoop SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_1_RampUp_and_Loop"), ShakerSoundLevel
+							PlaySoundAtLevelExistingStaticLoop (Cartridge_Table_Specifics & "_Shaker_Level_01_RampUp_and_Loop"), ShakerSoundLevel, ShakerPosition
 						Case "Normal"
-							PlaySoundAtLevelExistingStaticLoop SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_2_RampUp_and_Loop"), ShakerSoundLevel
+							PlaySoundAtLevelExistingStaticLoop (Cartridge_Table_Specifics & "_Shaker_Level_02_RampUp_and_Loop"), ShakerSoundLevel, ShakerPosition
 						Case "High"
-							PlaySoundAtLevelExistingStaticLoop SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_3_RampUp_and_Loop"), ShakerSoundLevel
+							PlaySoundAtLevelExistingStaticLoop (Cartridge_Table_Specifics & "_Shaker_Level_03_RampUp_and_Loop"), ShakerSoundLevel, ShakerPosition
 					End Select
 				Case SoundOff
 					Select Case shakerintensity
 						Case "Low"
-							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_1_RampDown_Only"), ShakerSoundLevel
-							StopSound Cartridge_Table_Specifics & "_Shaker_Level_1_RampUp_and_Loop"
+							PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Shaker_Level_01_RampDown_Only"), ShakerSoundLevel, ShakerPosition
+							StopSound Cartridge_Table_Specifics & "_Shaker_Level_01_RampUp_and_Loop"
 						Case "Normal"
-							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_2_RampDown_Only"), ShakerSoundLevel
-							StopSound Cartridge_Table_Specifics & "_Shaker_Level_2_RampUp_and_Loop"
+							PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Shaker_Level_02_RampDown_Only"), ShakerSoundLevel, ShakerPosition
+							StopSound Cartridge_Table_Specifics & "_Shaker_Level_02_RampUp_and_Loop"
 						Case "High"
-							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_3_RampDown_Only"), ShakerSoundLevel
-							StopSound Cartridge_Table_Specifics & "_Shaker_Level_3_RampUp_and_Loop"
+							PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Shaker_Level_03_RampDown_Only"), ShakerSoundLevel, ShakerPosition
+							StopSound Cartridge_Table_Specifics & "_Shaker_Level_03_RampUp_and_Loop"
 					End Select
 			End Select		
 		Case 2
-			Select Case toggle
-				Case SoundOn
+'			Select Case toggle
+'				Case SoundOn
 					Select Case ShakerIntensity
 						Case "Low"
-							PlaySoundAtLevelExistingStaticLoop SoundFXDOF("", 126, DOFstate, DOFShaker)
+							PlaySoundAtLevelExistingStaticLoop SoundFXDOF("", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
 						Case "Normal"
-							PlaySoundAtLevelExistingStaticLoop SoundFXDOF("", 127, DOFstate, DOFShaker)
+							PlaySoundAtLevelExistingStaticLoop SoundFXDOF("", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
 						Case "High"
-							PlaySoundAtLevelExistingStaticLoop SoundFXDOF("", 128, DOFstate, DOFShaker)
+							PlaySoundAtLevelExistingStaticLoop SoundFXDOF("", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
 					End Select
-				Case SoundOff
-			End Select
+'				Case SoundOff
+'			End Select
 		Case 3
 			Select Case toggle
 				Case SoundOn
 					Select Case ShakerIntensity
 						Case "Low"
-							PlaySoundAtLevelExistingStaticLoop SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_1_RampUp_and_Loop", 126, DOFstate, DOFShaker), ShakerSoundLevel
+							PlaySoundAtLevelExistingStaticLoop SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_01_RampUp_and_Loop", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
 						Case "Normal"
-							PlaySoundAtLevelExistingStaticLoop SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_2_RampUp_and_Loop", 127, DOFstate, DOFShaker), ShakerSoundLevel
+							PlaySoundAtLevelExistingStaticLoop SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_02_RampUp_and_Loop", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
 						Case "High"
-							PlaySoundAtLevelExistingStaticLoop SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_3_RampUp_and_Loop", 128, DOFstate, DOFShaker), ShakerSoundLevel
+							PlaySoundAtLevelExistingStaticLoop SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_03_RampUp_and_Loop", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
 					End Select
 				Case SoundOff
 					Select Case shakerintensity
 						Case "Low"
-							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_1_RampDown_Only"), ShakerSoundLevel
-							StopSound Cartridge_Table_Specifics & "_Shaker_Level_1_RampUp_and_Loop"
+'							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_01_RampDown_Only"), ShakerSoundLevel, Drain
+							PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_01_RampDown_Only", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
+							StopSound Cartridge_Table_Specifics & "_Shaker_Level_01_RampUp_and_Loop"
 						Case "Normal"
-							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_2_RampDown_Only"), ShakerSoundLevel
-							StopSound Cartridge_Table_Specifics & "_Shaker_Level_2_RampUp_and_Loop"
+'							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_02_RampDown_Only"), ShakerSoundLevel, Drain
+							PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_02_RampDown_Only", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
+							StopSound Cartridge_Table_Specifics & "_Shaker_Level_02_RampUp_and_Loop"
 						Case "High"
-							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_3_RampDown_Only"), ShakerSoundLevel
-							StopSound Cartridge_Table_Specifics & "_Shaker_Level_3_RampUp_and_Loop"
+'							PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_03_RampDown_Only"), ShakerSoundLevel, Drain
+							PlaySoundAtLevelStatic SoundFXDOF(Cartridge_Table_Specifics & "_Shaker_Level_03_RampDown_Only", 152, DOFstate, DOFShaker), ShakerSoundLevel, ShakerPosition
+							StopSound Cartridge_Table_Specifics & "_Shaker_Level_03_RampUp_and_Loop"
 					End Select
 			End Select
 	End Select
 End Sub
 
 
-'//////////////////////////////////  BEACON  ////////////////////////////////////
-'DOF number for beacon motor
-'130 - Beacon Motor
-
-'//  Possible Shaker Configurations (determined by const BeaconMotor in sound options above)
-'//  This setting will determine if the beacon motor is used during game play. Options:
-'//  0 = Beacon motor completely disabled (DOF+Sound/SSF)
-'//  1 = Beacon motor enabled for Sound/SSF only
-'//  2 = Beacon motor enabled for DOF only
-'//  3 = Beacon motor enabled for DOF + Sound/SSF
-
-Sub SoundBeaconDOF(toggle, DOFstate)
-	Select Case BeaconMotor
-		Case 0
-		Case 1
-			Select Case toggle
-				Case SoundOn
-					PlaySoundAtLevelExistingStaticLoop SoundFX(Cartridge_Table_Specifics & "_Beacon_RampUp_and_Loop"), BeaconSoundLevel
-				Case SoundOff
-					PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_1_RampDown_Only"), BeaconSoundLevel
-					StopSound Cartridge_Table_Specifics & "_Beacon_RampUp_and_Loop"
-			End Select		
-		Case 2
-			Select Case toggle
-				Case SoundOn
-					PlaySoundAtLevelExistingStaticLoop SoundFXDOF("", 130, DOFstate, DOFGear)
-				Case SoundOff
-			End Select
-		Case 3
-			Select Case toggle
-				Case SoundOn
-					PlaySoundAtLevelExistingStaticLoop SoundFXDOF(Cartridge_Table_Specifics & "_Beacon_RampUp_and_Loop", 130, DOFstate, DOFGear), BeaconSoundLevel
-				Case SoundOff
-					PlaySoundAtLevelStatic SoundFX(Cartridge_Table_Specifics & "_Shaker_Level_1_RampDown_Only"), BeaconSoundLevel
-					StopSound Cartridge_Table_Specifics & "_Beacon_RampUp_and_Loop"
-			End Select
-	End Select
-End Sub
 
 
 '///////////////////////////////////  SPINNER  //////////////////////////////////
@@ -16214,8 +16089,9 @@ End Sub
 
 '//////////////////////////////  ROLLOVER SOUNDS  ///////////////////////////////
 Sub RandomSoundRollover()
-	PlaySoundAtLevelActiveBall (Cartridge_Rollovers & "_Rollover_Switch_" & Int(Rnd*3)+1), RolloverSoundLevel
+	PlaySoundAtLevelActiveBall (Cartridge_Rollovers & "_Rollover_All_" & Int(Rnd*4)+1), RolloverSoundLevel
 End Sub
+
 
 Sub Rollovers_Hit(idx)
 	RandomSoundRollover
@@ -16223,37 +16099,13 @@ End Sub
 
 
 Sub RandomSoundInlanes()
-	PlaySoundAtLevelActiveBall (Cartridge_Rollovers & "_Rollover_Lane_" & Int(Rnd*4)+1), 0.5 * RolloverSoundLevel
+	PlaySoundAtLevelActiveBall (Cartridge_Rollovers & "_Rollover_Outlane_" & Int(Rnd*4)+1), OutLaneRolloverSoundLevel
 End Sub
 
 Sub RandomSoundLanes()
-	PlaySoundAtLevelActiveBall (Cartridge_Rollovers & "_Rollover_Lane_Wall_" & Int(Rnd*2)+1), RolloverSoundLevel
+	PlaySoundAtLevelActiveBall (Cartridge_Rollovers & "_Rollover_Outlane_" & Int(Rnd*4)+1), OutLaneRolloverSoundLevel
 End Sub
 
-'//////////////////////////  SOLENOID A/C SELECT RELAY  /////////////////////////
-'Sub Sound_Solenoid_AC(toggle)
-'	Select Case toggle
-'		Case CircuitA
-'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_AC_Select_Relay_Side_A"), RelaySolenoidACSelectSoundLevel, GIUpperPosition
-'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_AC_Select_Relay_Side_A"), RelaySolenoidACSelectSoundLevel, ACSelectPosition
-'		Case CircuitC
-'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_AC_Select_Relay_Side_C"), RelaySolenoidACSelectSoundLevel, GIUpperPosition
-'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_AC_Select_Relay_Side_C"), RelaySolenoidACSelectSoundLevel, ACSelectPosition
-'	End Select
-'End Sub
-
-
-''//////////////////////////  GENERAL ILLUMINATION RELAYS  ///////////////////////
-'Sub Sound_LowerGI_Relay(toggle)
-'	Select Case toggle
-'		Case SoundOn
-'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Lower_Playfield_and_Backbox_GI_Relay_On"), RelayLowerGISoundLevel, GIUpperPosition
-'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Lower_Playfield_and_Backbox_GI_Relay_On"), RelayLowerGISoundLevel, GIUpperPosition
-'		Case SoundOff
-'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Lower_Playfield_and_Backbox_GI_Relay_Off"), RelayLowerGISoundLevel, GIUpperPosition
-'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic (Cartridge_Relays & "_Relays_Lower_Playfield_and_Backbox_GI_Relay_Off"), RelayLowerGISoundLevel, GIUpperPosition
-'	End Select
-'End Sub
 
 Sub Sound_GI_Relay(toggle)
 	Select Case toggle
@@ -16280,267 +16132,162 @@ Sub Sound_Flasher_Relay(toggle, tableobj)
 End Sub
 
 
-
 '////////////////////  VARIOUS PLAYFIELD SOUND SUBROUTINES  /////////////////////
 '/////////////////////////////  RUBBERS AND POSTS  //////////////////////////////
 '/////////////////////////////  RUBBERS - EVENTS  ///////////////////////////////
-Sub Rubbers_Bands_Long_Hit(idx)
+Sub HitsRubbers_Hit(idx)
+'	debug.print "rubber hit"
  	dim finalspeed
   	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
- 	If finalspeed > 5 then		
- 		RandomSoundRubberBandsStrong()
+ 	If finalspeed > 10 then
+ 		RandomSoundRubberStrong() 
 	End if
-	If finalspeed <= 5 then
- 		RandomSoundRubberBandsWeak()
- 	End If	
-End Sub
-
-Sub Rubbers_Bands_Short_Hit(idx)
- 	dim finalspeed
-  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
- 	If finalspeed > 5 then		
- 		RandomSoundRubberBandsStrong()
-	End if
-	If finalspeed <= 5 then
- 		RandomSoundRubberBandsWeak()
- 	End If	
-End Sub
-
-Sub Rubbers_Bands_Rollovers_Hit(idx)
-	RandomSoundRubberBandsRollovers()
-	RandomSoundLanes()
-End Sub
-
-Sub Rubbers_Post_Star_Hit(idx)
- 	dim finalspeed
-  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
- 	If finalspeed > 5 then		
- 		RandomSoundRubberPostStarStrong()
-	End if
-	If finalspeed <= 5 then
- 		RandomSoundRubberPostStarWeak()
+	If finalspeed <= 10 then
+ 		RandomSoundRubberWeak()
  	End If	
 End Sub
 
 
-Sub Rubbers_Post_Sleeve_Hit(idx)
- 	dim finalspeed
-  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
- 	If finalspeed > 5 then		
- 		RandomSoundRubberPostSleeveStrong()
-	End if
-	If finalspeed <= 5 then
- 		RandomSoundRubberPostSleeveWeak()
- 	End If	
-End Sub
-
-Sub Rubbers_Peg_Hit(idx)
-	RandomSoundRubberPeg()
-End Sub
-
-
-'///////////////////////  RUBBERS BANDS - STRONG IMPACTS  ///////////////////////
-Sub RandomSoundRubberBandsStrong()
-	'debug.print "Vol(ActiveBall) * RubberStrongSoundFactor :" & Vol(ActiveBall) * RubberStrongSoundFactor
-	Select Case Int(Rnd*8)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_1"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_16"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_18"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_19"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_35"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_9"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_30"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_11"), Vol(ActiveBall) * RubberStrongSoundFactor
+'/////////////////////  RUBBERS AND POSTS - STRONG IMPACTS  /////////////////////
+Sub RandomSoundRubberStrong()
+	Select Case Int(Rnd*10)+1
+		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_1"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_2"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_3"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_4"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_5"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_6"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_7"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_8"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 9 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_9"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 10 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_Strong_10"), Vol(ActiveBall) * RubberStrongSoundFactor * 0.6
 	End Select
 End Sub
 
 
-'//////////////////  RUBBERS BANDS - WEAK / ROLLOVERS IMPACTS  //////////////////
-Sub RandomSoundRubberBandsWeak()
-	'debug.print "Vol(ActiveBall) * RubberWeakSoundFactor :" & Vol(ActiveBall) * RubberWeakSoundFactor
-	Select Case Int(Rnd*8)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_10"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_12"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_21"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_22"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_23"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_31"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_32"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_33"), Vol(ActiveBall) * RubberWeakSoundFactor
-	End Select
-End Sub
-
-Sub RandomSoundRubberBandsRollovers()
-	PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Peg_Soft_Rollover_Rebound_" & Int(Rnd*3)+1), Vol(ActiveBall) * RubberWeakSoundFactor
+'///////////////////////  RUBBERS AND POSTS - WEAK IMPACTS  /////////////////////
+Sub RandomSoundRubberWeak()
+	PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Hit_" & Int(Rnd*8)+1), Vol(ActiveBall) * RubberWeakSoundFactor
 End Sub
 
 
-'//////////////////////  RUBBERS POST STAR - STRONG IMPACTS  ////////////////////
-Sub RandomSoundRubberPostStarStrong()
-	'debug.print "Vol(ActiveBall) * RubberStrongSoundFactor :" & Vol(ActiveBall) * RubberStrongSoundFactor
+
+'////////////////////////////  RAMP ENTRANCE EVENTS  ////////////////////////////
+'/////////////////////////  RIGHT RAMP ENTRANCE SOUNDS  /////////////////////////
+
+Sub RRAMPUP_Hit()
+	' Play the right plastic ramp entrance lifter/down sound for each ball
+	If BallVel(ActiveBall) > 1 and ActiveBall.VelY < 0 Then
+'		debug.print "Ball rolls upwards"
+		PlaySoundAtLevelTimerExistingActiveBall (Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Ramp_Enter_" & Int(Rnd*4)+1), RightPlasticRampEnteranceSoundLevel, ActiveBall
+	End If
+End Sub
+
+Sub RRAMPDOWN_Hit()
+	' Play the right plastic ramp entrance lifter/down sound for each ball
+	If BallVel(ActiveBall) > 1 and ActiveBall.VelY > 0 Then
+'		debug.print "Ball rolls downwards"
+		PlaySoundAtLevelTimerExistingActiveBall (Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Ramp_RollBack_" & Int(Rnd*2)+1), RightPlasticRampEnteranceSoundLevel, ActiveBall
+	End If
+End Sub
+
+Sub RRHelper1_Hit()
+	If ActiveBall.VelX < 0 Then PlaySoundAtLevelStatic (Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_5"), RightPlasticRampHitsSoundLevel, RRHelper1 : 'Debug.print Cartridge_Plastic_Ramps & "_Ramp_Right_Plastic_Hit_1"
+End Sub
+
+
+'///////////////////////////////  WALL IMPACTS  /////////////////////////////////
+Sub RandomSoundWall()
+ 	dim finalspeed
+  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
+'	debug.print finalspeed
+ 	If finalspeed > 16 then 
+		Select Case Int(Rnd*5)+1
+			Case 1 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_1"), Vol(ActiveBall) * WallImpactSoundFactor
+			Case 2 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_2"), Vol(ActiveBall) * WallImpactSoundFactor
+			Case 3 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_5"), Vol(ActiveBall) * WallImpactSoundFactor * 0.05
+			Case 4 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_7"), Vol(ActiveBall) * WallImpactSoundFactor
+			Case 5 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_9"), Vol(ActiveBall) * WallImpactSoundFactor
+		End Select
+	End if
+	If finalspeed >= 6 AND finalspeed <= 16 then
+		Select Case Int(Rnd*4)+1
+			Case 1 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_3"), Vol(ActiveBall) * WallImpactSoundFactor
+			Case 2 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_4"), Vol(ActiveBall) * WallImpactSoundFactor
+			Case 3 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_6"), Vol(ActiveBall) * WallImpactSoundFactor
+			Case 4 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_8"), Vol(ActiveBall) * WallImpactSoundFactor
+		End Select
+ 	End If
+	If finalspeed < 6 Then
+		Select Case Int(Rnd*3)+1
+			Case 1 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_4"), Vol(ActiveBall) * WallImpactSoundFactor
+			Case 2 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_6"), Vol(ActiveBall) * WallImpactSoundFactor
+			Case 3 : PlaySoundAtLevelExistingActiveBall (Cartridge_Metal_Hits & "_Metal_Alternative_Hit_8"), Vol(ActiveBall) * WallImpactSoundFactor
+		End Select
+	End if
+End Sub
+
+'/////////////////////////////  METAL TOUCH SOUNDS  /////////////////////////////
+Sub RandomSoundMetal()
+'	debug.print "randr metal: " & Vol(ActiveBall)
 	Select Case Int(Rnd*20)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_2"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_3"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_4"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_5"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_6"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_7"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_8"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_13"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 9 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_14"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 10 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_15"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 11 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_17"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 12 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_20"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 13 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_24"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 14 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_25"), Vol(ActiveBall) * RubberStrongSoundFactor												
-		Case 15 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_26"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 16 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_27"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 17 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_28"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 18 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_29"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 19 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_34"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 20 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_36"), Vol(ActiveBall) * RubberStrongSoundFactor
+		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_1"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_2"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_3"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_4"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_5"), Vol(ActiveBall) * 0.02 * MetalImpactSoundFactor
+		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_6"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_7"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_8"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 9 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_9"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 10 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_10"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 11 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_11"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 12 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_12"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 13 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_13"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 14 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_14"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 15 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_15"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 16 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_16"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 17 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_17"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 18 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_18"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 19 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_19"), Vol(ActiveBall) * MetalImpactSoundFactor
+		Case 20 : PlaySoundAtLevelActiveBall (Cartridge_Metal_Hits & "_Metal_Hit_20"), Vol(ActiveBall) * MetalImpactSoundFactor
 	End Select
 End Sub
-
-
-'///////////////////////  RUBBERS POST STAR - WEAK IMPACTS  /////////////////////
-Sub RandomSoundRubberPostStarWeak()
-	'debug.print "Vol(ActiveBall) * RubberWeakSoundFactor :" & Vol(ActiveBall) * RubberWeakSoundFactor
-	Select Case Int(Rnd*16)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_1"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_16"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_18"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_19"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_35"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_9"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_30"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_11"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 9 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_10"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 10 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_12"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 11 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_21"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 12 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_22"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 13 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_23"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 14 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_31"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 15 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_32"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 16 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Star_Hit_33"), Vol(ActiveBall) * RubberWeakSoundFactor
-	End Select
-End Sub
-
-
-'/////////////////////  RUBBERS POST SLEEVE - STRONG IMPACTS  ///////////////////
-Sub RandomSoundRubberPostSleeveStrong()
-	'debug.print "Vol(ActiveBall) * RubberStrongSoundFactor :" & Vol(ActiveBall) * RubberStrongSoundFactor
-	Select Case Int(Rnd*11)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_2"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_3"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_4"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_7"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_11"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_12"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_13"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_14"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 9 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_16"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 10 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_17"), Vol(ActiveBall) * RubberStrongSoundFactor
-		Case 11 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_18"), Vol(ActiveBall) * RubberStrongSoundFactor
-	End Select
-End Sub
-
-
-'/////////////////////  RUBBERS POST SLEEVE - WEAK IMPACTS  /////////////////////
-Sub RandomSoundRubberPostSleeveWeak()
-	'debug.print "Vol(ActiveBall) * RubberWeakSoundFactor :" & Vol(ActiveBall) * RubberWeakSoundFactor
-	Select Case Int(Rnd*8)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_1"), Vol(ActiveBall) * 0.5 * RubberWeakSoundFactor
-		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_5"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_6"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_8"), Vol(ActiveBall) * 0.6 * RubberWeakSoundFactor
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_9"), Vol(ActiveBall) * RubberWeakSoundFactor
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_10"), Vol(ActiveBall) * 0.5 * RubberWeakSoundFactor
-		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_15"), Vol(ActiveBall) * 0.5 * RubberWeakSoundFactor
-		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Post_Sleeve_Hit_19"), Vol(ActiveBall) * 0.5 * RubberWeakSoundFactor
-	End Select
-End Sub
-
-
-'///////////////////////////  RUBBERS PEG - IMPACTS  ////////////////////////////
-Sub RandomSoundRubberPeg()
-	PlaySoundAtLevelActiveBall (Cartridge_Rubber_Hits & "_Rubber_Peg_Hit_" & Int(Rnd*5)+1), Vol(ActiveBall) * RubberStrongSoundFactor
-End Sub
-
-
-'///////////////////////////  PLAYFIELD WALL SOUNDS  ////////////////////////////
-Sub Wall2_Hit()
-	PlaySoundAtLevelActiveBall (Cartridge_Wood_Hits & "_Playfield_Wall_Hit_" & Int(Rnd*2)+1), Vol(ActiveBall) * WallImpactSoundFactor
-End Sub
-
-Sub Wall3_Hit()
-	PlaySoundAtLevelActiveBall (Cartridge_Wood_Hits & "_Playfield_Wall_Hit_" & Int(Rnd*2)+1), Vol(ActiveBall) * WallImpactSoundFactor
-End Sub
-
 
 '///////////////////////  METAL WIRE BALL GUIDE HIT SOUNDS  /////////////////////
 Sub MetalWireBallGuideHit()
-	PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Wire_Ball_Guide_Rail_" & Int(Rnd*6)+1), Vol(ActiveBall) * MetalGuideHitSoundLevel
+'	PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Wire_Ball_Guide_Rail_" & Int(Rnd*6)+1), Vol(ActiveBall) * MetalGuideHitSoundLevel
+	RandomSoundWall
 End Sub
 
 
 '/////////////////////////  METAL GUIDE SIDE HIT SOUNDS  ////////////////////////
 Sub MetalGuideSideHit()
-	PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Side_Hit_" & Int(Rnd*14)+1), Vol(ActiveBall) * MetalGuideHitSoundLevel
+'	PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Side_Hit_" & Int(Rnd*14)+1), Vol(ActiveBall) * MetalGuideHitSoundLevel
+	RandomSoundWall
 End Sub
 
 
 '/////////////////////////  METAL GUIDE TOP HIT SOUNDS  /////////////////////////
 Sub MetalGuideTopHit()
-	PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Top_Hit_" & Int(Rnd*3)+1), Vol(ActiveBall) * MetalGuideHitSoundLevel
+'	PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Top_Hit_" & Int(Rnd*3)+1), Vol(ActiveBall) * MetalGuideHitSoundLevel
+	RandomSoundMetal
 End Sub
 
 
 '///////////////////////  METAL BALL GUIDE COLLECTIONS  /////////////////////////
 Sub Metal_Wire_Ball_Guides_Hit(idx)
 'debug.print "Metal_Wire_Ball_Guides_Hit"
-	MetalWireBallGuideHit()
+'	MetalWireBallGuideHit()
+	RandomSoundMetal
 End Sub
 
 'Sub Metal_Ball_Guides_Hit(idx)
 Sub Metals_Hit(idx)
-'debug.print "Metal_Ball_Guides_Hit"
-	Set ballVariableForMetalBallGuideTop = ActiveBall
- 	dim finalspeed
-  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-	If thisBallOverRollovers(ballVariableForMetalBallGuideTop) Then
-		If finalspeed <= 6 then	
-			'If active ball touches top metal ball guide
-'debug.print "--> Top touch"
-			MetalGuideTopHit()
-		End If
-	Else
-		If finalspeed <= 10 then	
-'debug.print "--> side touch"
-			MetalGuideSideHit()
-		End If
-	End If
+
+	RandomSoundMetal
 End Sub
 
-
-Function thisBallOverRollovers(ball)
-	thisBallOverRollovers = InRect(ball.x, ball.y, 500, 75, 810, 110, 780, 170, 500, 140)
-End Function
-
-Sub MetalRollDetect_UnHit()
-	If StopMetalRollWhenBallRollsSlowFromShooter = 1 AND ActiveBall.vely > 0 Then
-		StopMetalRollWhenBallRollsSlowFromShooter = StopMetalRollWhenBallRollsSlowFromShooter + 1
-	End If
-End Sub
-
-Sub MetalRollStopSlowBall_Hit()
-	If StopMetalRollWhenBallRollsSlowFromShooter = 2 AND ActiveBall.vely > 0 Then
-		'Ball rolls downwards to rollovers area
-'debug.print "Ball rolls downwards to rollovers area"
-		StopAnyMetalBallGuideOrbitRoll()
-	End If
-	StopMetalRollWhenBallRollsSlowFromShooter = 0
-End Sub
 
 
 
@@ -16586,73 +16333,31 @@ End Sub
 
 
 
-'/////////////////////////  SHOOTER LANE - ON PLUNGER ///////////////////////////
-Sub SoundTroughToShooterLane()
-	PlaySoundAtLevelStatic (Cartridge_Table_Specifics & "_Trough_To_Shooter_Lane_" & Int(Rnd*9)+1), TroughToShooterLaneOnPlungerSoundLevel, swPlunger
-End Sub
-
 
 '///////////////////////////  BOTTOM ARCH BALL GUIDE  ///////////////////////////
 '//////////////////////  BOTTOM ARCH BALL GUIDE - BOUNCES  //////////////////////
 Sub Apronwall_Hit (idx)
-	RandomSoundBottomArchBallGuide
+	RandomSoundApron activeball
 End Sub
 
-Sub RandomSoundBottomArchBallGuide()
+
+Sub RandomSoundApron(aball)
  	dim finalspeed
-  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
- 	If finalspeed > 16 then 
- 		Select Case Int(Rnd*3)+1
-			Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_1"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-			Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_2"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-			Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_5"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
+  	finalspeed=SQR(aball.velx * aball.velx + aball.vely * aball.vely)
+ 	If finalspeed > 16 then
+ 		Select Case Int(Rnd*2)+1
+			Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_Hard_1"),  Vol(aball) * FlipperBallGuideSoundFactor
+			Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_Hard_2"),  Vol(aball) * 0.8 * FlipperBallGuideSoundFactor
 		End Select
 	End if
 	If finalspeed >= 6 AND finalspeed <= 16 then
- 		Select Case Int(Rnd*3)+1
-			Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_6"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-			Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_8"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-			Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_9"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-		End Select
+		PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_Medium_" & Int(Rnd*3)+1),  Vol(aball) * FlipperBallGuideSoundFactor
  	End If
 	If finalspeed < 6 Then
- 		Select Case Int(Rnd*3)+1
-			Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_3"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-			Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_4"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-			Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_7"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-		End Select
+		PlaySoundAtLevelActiveBall (Cartridge_Apron & "_Apron_Hit_Soft_" & Int(Rnd*7)+1),  Vol(aball) * FlipperBallGuideSoundFactor
 	End if
 End Sub
 
-
-'/////////////////////////////  FLIPPER BALL GUIDE  /////////////////////////////
-Sub Wall17_Hit
-	RandomSoundFlipperBallGuide
-End Sub
-
-Sub Wall22_Hit
-	RandomSoundFlipperBallGuide
-End Sub
-
-Sub RandomSoundFlipperBallGuide()
- 	dim finalspeed
-  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-	If finalspeed >= 6 Then
-		Select Case Int(Rnd*4)+1
-			Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Plastic_Hits & "_Flipper_Feed_Ball_Guide_Hit_1"), Vol(ActiveBall) * FlipperBallGuideSoundFactor
-			Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Plastic_Hits & "_Flipper_Feed_Ball_Guide_Hit_3"), Vol(ActiveBall) * FlipperBallGuideSoundFactor
-			Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Plastic_Hits & "_Flipper_Feed_Ball_Guide_Hit_5"), Vol(ActiveBall) * FlipperBallGuideSoundFactor
-			Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Plastic_Hits & "_Flipper_Feed_Ball_Guide_Hit_6"), Vol(ActiveBall) * FlipperBallGuideSoundFactor
-		End Select
- 	End If
-	If finalspeed < 6 Then
-		Select Case Int(Rnd*3)+1
-			Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Plastic_Hits & "_Flipper_Feed_Ball_Guide_Hit_2"), Vol(ActiveBall) * FlipperBallGuideSoundFactor
-			Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Plastic_Hits & "_Flipper_Feed_Ball_Guide_Hit_4"), Vol(ActiveBall) * FlipperBallGuideSoundFactor
-			Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Plastic_Hits & "_Flipper_Feed_Ball_Guide_Hit_7"), Vol(ActiveBall) * FlipperBallGuideSoundFactor
-		End Select
-	End If
-End Sub
 
 
 '////////////////////////   STANDUP TARGET HIT SOUNDS  //////////////////////////
@@ -16674,267 +16379,69 @@ Sub Targets_Hit(idx)
 	TargetBouncer activeball, 1.4
 End Sub
 
-
+'//////////////////////////  STADNING TARGET HIT SOUNDS  ////////////////////////
 Sub RandomSoundTargetHitStrong()
-	Select Case Int(Rnd*21)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_1"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_2"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_3"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_4"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_5"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_6"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_7"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_9"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 9 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_10"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 10 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_12"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 11 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_13"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 12 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_15"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 13 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_17"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 14 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_18"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 15 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_20"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 16 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_21"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 17 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_23"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 18 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_24"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 19 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_28"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 20 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_29"), Vol(ActiveBall) * StandupTargetSoundFactor
-		Case 21 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_36"), Vol(ActiveBall) * StandupTargetSoundFactor
+	Select Case Int(Rnd*4)+1
+		Case 1 : PlaySoundAtLevelActiveBall SoundFX(Cartridge_Targets & "_Target_Hit_5",DOFTargets), Vol(ActiveBall) * StandupTargetSoundFactor
+		Case 2 : PlaySoundAtLevelActiveBall SoundFX(Cartridge_Targets & "_Target_Hit_6",DOFTargets), Vol(ActiveBall) * StandupTargetSoundFactor
+		Case 3 : PlaySoundAtLevelActiveBall SoundFX(Cartridge_Targets & "_Target_Hit_7",DOFTargets), Vol(ActiveBall) * StandupTargetSoundFactor
+		Case 4 : PlaySoundAtLevelActiveBall SoundFX(Cartridge_Targets & "_Target_Hit_8",DOFTargets), Vol(ActiveBall) * StandupTargetSoundFactor		
 	End Select
 End Sub
 
-Sub RandomSoundTargetHitWeak()		
-	Select Case Int(Rnd*16)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_8"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_11"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_14"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_16"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_19"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_22"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_25"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_26"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 9 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_27"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 10 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_30"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 11 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_31"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 12 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_32"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 13 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_33"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 14 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_34"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 15 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_35"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
-		Case 16 : PlaySoundAtLevelActiveBall (Cartridge_Targets & "_Standup_Target_Hit_37"), Vol(ActiveBall) * 0.5 * StandupTargetSoundFactor
+Sub RandomSoundTargetHitWeak()
+	Select Case Int(Rnd*4)+1		
+		Case 1 : PlaySoundAtLevelActiveBall SoundFX(Cartridge_Targets & "_Target_Hit_1",DOFTargets), Vol(ActiveBall) * StandupTargetSoundFactor
+		Case 2 : PlaySoundAtLevelActiveBall SoundFX(Cartridge_Targets & "_Target_Hit_2",DOFTargets), Vol(ActiveBall) * StandupTargetSoundFactor
+		Case 3 : PlaySoundAtLevelActiveBall SoundFX(Cartridge_Targets & "_Target_Hit_3",DOFTargets), Vol(ActiveBall) * StandupTargetSoundFactor
+		Case 4 : PlaySoundAtLevelActiveBall SoundFX(Cartridge_Targets & "_Target_Hit_4",DOFTargets), Vol(ActiveBall) * StandupTargetSoundFactor
 	End Select
 End Sub
 
 
-'//////////////////////////////  BALL BOUNCE SOUNDS  ////////////////////////////
-Sub RandomSoundBallBouncePlayfieldSoft(aBall)
-	Select Case Int(Rnd*9)+1
-		Case 1 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_1"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-		Case 2 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_2"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-		Case 3 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_3"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-		Case 4 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_4"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-		Case 5 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_8"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-		Case 6 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_12"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-		Case 7 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_13"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-		Case 8 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_16"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-		Case 9 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_17"), volz(aBall) * BallBouncePlayfieldSoftSoundFactor, aBall
-	End Select
-End Sub
 
-Sub RandomSoundBallBouncePlayfieldHard(aBall)
-	Select Case Int(Rnd*9)+1
-		Case 1 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_5"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-		Case 2 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_6"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-		Case 3 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_7"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-		Case 4 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_9"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-		Case 5 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_10"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-		Case 6 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_11"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-		Case 7 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_14"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-		Case 8 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_15"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-		Case 9 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_18"), volz(aBall) * BallBouncePlayfieldHardSoundFactor, aBall
-	End Select
-End Sub
-
-Sub RandomSoundBallBouncePlayfieldFromMetalShooterLane(aBall)
-	'debug.print "Volz Bounce from Metal Shooter Lane: " & volz(aBall)
+'/////////////////////////////  BALL BOUNCE SOUNDS  /////////////////////////////
+Sub RandomSoundBallBouncePlayfieldSoft(aball)
+'	debug.print "soft"
 	Select Case Int(Rnd*7)+1
-		Case 1 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Metal_Ball_Guide_Orbit_Right_Entrance_BallDrop_1"), volz(aBall) * BallBouncePlayfieldFromMetalShooterLaneSoundLevel, aBall
-		Case 2 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Shooter_Lane_Metal_BallDrop_1"), volz(aBall) * BallBouncePlayfieldFromMetalShooterLaneSoundLevel, aBall
-		Case 3 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Metal_Ball_Guide_Orbit_Right_Entrance_BallDrop_2"), volz(aBall) * BallBouncePlayfieldFromMetalShooterLaneSoundLevel, aBall
-		Case 4 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Shooter_Lane_Metal_BallDrop_2"), volz(aBall) * BallBouncePlayfieldFromMetalShooterLaneSoundLevel, aBall
-		Case 5 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Metal_Ball_Guide_Orbit_Right_Entrance_BallDrop_3"), volz(aBall) * BallBouncePlayfieldFromMetalShooterLaneSoundLevel, aBall
-		Case 6 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Shooter_Lane_Metal_BallDrop_3"), volz(aBall) * BallBouncePlayfieldFromMetalShooterLaneSoundLevel, aBall
-		Case 7 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Metal_Ball_Guide_Orbit_Right_Entrance_BallDrop_4"), volz(aBall) * BallBouncePlayfieldFromMetalShooterLaneSoundLevel, aBall
+		Case 1 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_2"), Volz(aball) * BallBouncePlayfieldSoftSoundFactor, aBall
+		Case 2 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_12"), Volz(aball) * BallBouncePlayfieldSoftSoundFactor, aBall
+		Case 3 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_14"), Volz(aball) * BallBouncePlayfieldSoftSoundFactor, aBall
+		Case 4 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_18"), Volz(aball) * BallBouncePlayfieldSoftSoundFactor, aBall
+		Case 5 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_19"), Volz(aball) * BallBouncePlayfieldSoftSoundFactor, aBall
+		Case 6 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_20"), Volz(aball) * BallBouncePlayfieldSoftSoundFactor, aBall
+		Case 7 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_21"), Volz(aball) * BallBouncePlayfieldSoftSoundFactor, aBall
 	End Select
 End Sub
 
-Sub RandomSoundBallBounceAfterPopBumper()
-	Select Case Int(Rnd*6)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_After_Pop_Bumper_1"),  Vol(ActiveBall) * BallBounceAfterPopBumperSoundLevel
-		Case 2 : 'Play Nothing
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_After_Pop_Bumper_2"),  Vol(ActiveBall) * BallBounceAfterPopBumperSoundLevel
-		Case 4 : 'Play Nothing
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_After_Pop_Bumper_3"),  Vol(ActiveBall) * BallBounceAfterPopBumperSoundLevel
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_After_Pop_Bumper_4"),  Vol(ActiveBall) * BallBounceAfterPopBumperSoundLevel
-	End Select
-End Sub
-
-Sub RandomSoundBallBounceAfterSlingshot()
-	Select Case Int(Rnd*6)+1
-		Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_After_Slingshot_1"),  Vol(ActiveBall) * BallBounceAfterSlingshotSoundLevel
-		Case 2 : 'Play Nothing
-		Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_After_Slingshot_2"),  Vol(ActiveBall) * BallBounceAfterSlingshotSoundLevel
-		Case 4 : 'Play Nothing
-		Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_After_Slingshot_3"),  Vol(ActiveBall) * BallBounceAfterSlingshotSoundLevel
-		Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_After_Slingshot_4"),  Vol(ActiveBall) * BallBounceAfterSlingshotSoundLevel
+Sub RandomSoundBallBouncePlayfieldHard(aball)
+'	debug.print "hard"
+	Select Case Int(Rnd*12)+1
+		Case 1 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_1"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 2 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_3"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 3 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_7"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 4 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_8"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 5 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_9"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 6 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_11"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 7 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_13"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 8 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_15"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 9 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_16"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 10 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_17"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 11 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_22"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
+		Case 12 : PlaySoundAtLevelStatic (Cartridge_Ball_Drop_Bump & "_Ball_Rebound_23"), Volz(aball) * BallBouncePlayfieldHardSoundFactor, aBall
 	End Select
 End Sub
 
 
-'//////////////////////////////  LANES - ENTRANCE  /////////////////////////////
-Sub BallGuideOrbitLeft_Entrance_Hit()
-	If Activeball.vely < 0 Then
-		'Ball rolls upwards
-		dim finalspeed
-		finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-		If finalspeed >= 6 Then
-			Select Case Int(Rnd*5)+1
-				Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Left_Entrance_1"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Left_Entrance_2"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Left_Entrance_3"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Left_Entrance_4"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Left_Entrance_5"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-			End Select
-		Else
-			Select Case Int(Rnd*2)+1
-				Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Left_Entrance_3"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Left_Entrance_4"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-			End Select
-		End If
-	End If
-End Sub
-
-Sub BallGuideOrbitLeft_Entrance_UnHit()
-	If Activeball.vely < 0 Then
-		'Ball rolls upwards
-'debug.print "Ball rolls upwards"
-		dim finalspeed
-		finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-		'debug.print "BallGuideOrbitLeft_Entrance_UnHit - finalspeed: " & finalspeed
-		If finalspeed >= 15 Then
-			PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Left_Fast_Up"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
-		End IF
-		If finalspeed >= 6  AND finalspeed < 15 Then
-			PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Left_Fast_Up"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
-		End IF
-	End If
-	If Activeball.vely > 0 Then
-		'Ball rolls downwards
-'debug.print "Ball rolls downwards"
-		StopAnyMetalBallGuideOrbitRoll()
-	End If
-End Sub
-
-
-Sub BallGuideOrbitRight_Entrance_Hit()
-	If Activeball.vely < 0 Then
-		OrbitRight_EnterFromPlayfieldRightEntrance = 1
-		'Ball rolls upwards
-		dim finalspeed
-		finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-		'debug.print "BallGuideOrbitRight_Entrance_Hit - finalspeed: " & finalspeed
-		If finalspeed >= 6 Then
-			Select Case Int(Rnd*8)+1
-				Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_1"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_2"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_3"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 4 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_4"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 5 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_5"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 6 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_6"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 7 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_7"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-				Case 8 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_8"),  Vol(ActiveBall) * MetalBallGuideOrbitEntranceSoundFactor
-			End Select
-		Else
-			Select Case Int(Rnd*3)+1
-				Case 1 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_1"),  Vol(ActiveBall) * BallBounceAfterSlingshotSoundLevel
-				Case 2 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_4"),  Vol(ActiveBall) * BallBounceAfterSlingshotSoundLevel
-				Case 3 : PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Right_Entrance_NoBallDrop_6"),  Vol(ActiveBall) * BallBounceAfterSlingshotSoundLevel
-			End Select
-		End If
-	End If
-End Sub
-
-Sub BallGuideOrbitRight_Entrance_UnHit()
-	If Activeball.vely < 0 Then
-		'Ball rolls upwards
-'debug.print "right orb entrance Ball rolls upwards"
-		If OrbitRight_EnterFromPlayfieldRightEntrance AND NOT OrbitRight_EnterFromShooterLane Then
-			dim finalspeed
-			finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-			If finalspeed >= 8 Then
-				PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Slow_Up"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
-			End If
-'debug.print "--> not from shooterlane"
-			OrbitRight_EnterFromPlayfieldRightEntrance = 0
-		End If
-	End If
-	If Activeball.vely > 0 Then
-		'Ball rolls downwards
-'debug.print "right orb entrance Ball rolls downwards"
-		StopAnyMetalBallGuideOrbitRoll()
-		OrbitRight_EnterFromShooterLane = 0
-	End If
-End Sub
-
-
-
-Sub BallGuideOrbitRight_Roll_Up()
-	If OrbitRight_EnterFromShooterLane AND NOT OrbitRight_EnterFromPlayfieldRightEntrance Then
-		If Activeball.vely < 0 Then
-			'Ball rolls upwards
-'debug.print "right orb Ball rolls upwards"
-			PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Fast_Up"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
-			OrbitRight_EnterFromShooterLane = 0
-		End If
-	End If
-End Sub
-
-
-Sub BallGuideOrbitRight_Roll_Down()
-	If NOT OrbitRight_EnterFromShooterLane AND NOT OrbitRight_EnterFromPlayfieldRightEntrance Then
-		If Activeball.vely > 0 Then
-			'Ball rolls downwards
-'debug.print "right orb Ball rolls downwards"
-			PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Fast_Down"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
-		End If
-	End If
-End Sub
-
-Sub BallGuideOrbitLeft_Roll_Down()
-	If NOT OrbitLeft_EnterFromPlayfieldRightEntrance Then
-'		If Activeball.vely > 0 Then
-		If Activeball.velx < 0 Then
-			'Ball rolls downwards
-'debug.print "left orb rolls downwards"
-			PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Left_Fast_Down"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
-		End If
-	End If
-End Sub
-
-
-
-
-Sub StopAnyMetalBallGuideOrbitRoll()
-	StopSound Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Left_Fast_Up"
-	StopSound Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Fast_Up"
-	StopSound Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Left_Slow_Up"
-	StopSound Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Slow_Up"
-	StopSound Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Left_Fast_Down"
-	StopSound Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_Right_Fast_Down"
-	PlaySoundAtLevelActiveBall (Cartridge_Ball_Guides & "_Metal_Ball_Guide_Orbit_Roll_End"),  Vol(ActiveBall) * MetalBallGuideOrbitRollSoundFactor
-End Sub
 
 
 '////////////////////////////  BALL COLLISION SOUND  ////////////////////////////
 Sub OnBallBallCollision(ball1, ball2, velocity)
 	'debug.print "Ball Collide Volume: " & Csng(velocity) / 500 * BallWithBallCollisionSoundFactor * VolumeDial
+	if abs(ball1.vely) < 12 And abs(ball2.vely) < 12 And InRect(ball1.x, ball1.y, 246,830,446,830,446,1030,246,1030) then
+'		debug.print "exit " & velocity
+		exit sub	'don't rattle the locked balls
+	end if
 	PlaySound (Cartridge_BallBallCollision & "_BallBall_Collide_" & Int(Rnd*7)+1), 0, Csng(velocity) / 500 * BallWithBallCollisionSoundFactor * VolumeDial, AudioPan(ball1), 0, Pitch(ball1), 0, 0, AudioFade(ball1)
 End Sub
 
@@ -16943,18 +16450,6 @@ End Sub
 '/////////////////////////////////////////////////////////////////
 '					End Mechanical Sounds
 '/////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -17025,78 +16520,11 @@ Const BeaconMotor = 0
 
 
 
-'
-'
-''******************************************************
-''****  FLEEP MECHANICAL SOUNDS
-''******************************************************
-'
-'
-''////////////////////////////  MECHANICAL SOUNDS  ///////////////////////////
-''//  This part in the script is an entire block that is dedicated to the physics sound system.
-''//  Various scripts and sounds that may be pretty generic and could suit other WPC systems, but the most are tailored specifically for this table.
-'
-''///////////////////////////////  SOUNDS PARAMETERS  //////////////////////////////
-'Dim GlobalSoundLevel, CoinSoundLevel, PlungerReleaseSoundLevel, PlungerPullSoundLevel, NudgeLeftSoundLevel
-'Dim NudgeRightSoundLevel, NudgeCenterSoundLevel, StartButtonSoundLevel, RollingSoundFactor
-'
-'CoinSoundLevel = 1														'volume level; range [0, 1]
-'NudgeLeftSoundLevel = 1													'volume level; range [0, 1]
-'NudgeRightSoundLevel = 1												'volume level; range [0, 1]
-'NudgeCenterSoundLevel = 1												'volume level; range [0, 1]
-'StartButtonSoundLevel = 0.1												'volume level; range [0, 1]
-'PlungerReleaseSoundLevel = 0.8 '1 wjr											'volume level; range [0, 1]
-'PlungerPullSoundLevel = 1												'volume level; range [0, 1]
-'RollingSoundFactor = 1.1/5		
-'
-''///////////////////////-----Solenoids, Kickers and Flash Relays-----///////////////////////
-'Dim FlipperUpAttackMinimumSoundLevel, FlipperUpAttackMaximumSoundLevel, FlipperUpAttackLeftSoundLevel, FlipperUpAttackRightSoundLevel
-'Dim FlipperUpSoundLevel, FlipperDownSoundLevel, FlipperLeftHitParm, FlipperRightHitParm
-'Dim SlingshotSoundLevel, BumperSoundFactor, KnockerSoundLevel, GunMotorSoundLevel
-'
-'FlipperUpAttackMinimumSoundLevel = 0.010           						'volume level; range [0, 1]
-'FlipperUpAttackMaximumSoundLevel = 0.635								'volume level; range [0, 1]
-'FlipperUpSoundLevel = 1.0                        						'volume level; range [0, 1]
-'FlipperDownSoundLevel = 0.45                      						'volume level; range [0, 1]
-'FlipperLeftHitParm = FlipperUpSoundLevel								'sound helper; not configurable
-'FlipperRightHitParm = FlipperUpSoundLevel								'sound helper; not configurable
-'SlingshotSoundLevel = 0.95												'volume level; range [0, 1]
-'BumperSoundFactor = 4.25												'volume multiplier; must not be zero
-'KnockerSoundLevel = 1 													'volume level; range [0, 1]
-'GunMotorSoundLevel = 0.6												'volume level; range [0, 1]
-'
-''///////////////////////-----Ball Drops, Bumps and Collisions-----///////////////////////
-'Dim RubberStrongSoundFactor, RubberWeakSoundFactor, RubberFlipperSoundFactor,BallWithBallCollisionSoundFactor
-'Dim BallBouncePlayfieldSoftFactor, BallBouncePlayfieldHardFactor, PlasticRampDropToPlayfieldSoundLevel, WireRampDropToPlayfieldSoundLevel, DelayedBallDropOnPlayfieldSoundLevel
-'Dim WallImpactSoundFactor, MetalImpactSoundFactor, SubwaySoundLevel, SubwayEntrySoundLevel, ScoopEntrySoundLevel
-'Dim SaucerLockSoundLevel, SaucerKickSoundLevel
-'
-'BallWithBallCollisionSoundFactor = 3.2									'volume multiplier; must not be zero
-'RubberStrongSoundFactor = 0.055/5											'volume multiplier; must not be zero
-'RubberWeakSoundFactor = 0.075/5											'volume multiplier; must not be zero
-'RubberFlipperSoundFactor = 0.075/5										'volume multiplier; must not be zero
-'BallBouncePlayfieldSoftFactor = 0.025									'volume multiplier; must not be zero
-'BallBouncePlayfieldHardFactor = 0.025									'volume multiplier; must not be zero
-'DelayedBallDropOnPlayfieldSoundLevel = 0.8									'volume level; range [0, 1]
-'WallImpactSoundFactor = 0.075											'volume multiplier; must not be zero
-'MetalImpactSoundFactor = 0.075/3
-'SaucerLockSoundLevel = 0.8
-'SaucerKickSoundLevel = 0.8
-'
-'Dim RelayFlasherSoundLevel : RelayFlasherSoundLevel = 0.015
-'
-''///////////////////////-----Gates, Spinners, Rollovers and Targets-----///////////////////////
-'
-'Dim GateSoundLevel, TargetSoundFactor, SpinnerSoundLevel, RolloverSoundLevel, DTSoundLevel
-'
-'GateSoundLevel = 0.5/5													'volume level; range [0, 1]
-'TargetSoundFactor = 0.0025 * 10											'volume multiplier; must not be zero
-'DTSoundLevel = 0.25														'volume multiplier; must not be zero
-'RolloverSoundLevel = 0.25                              					'volume level; range [0, 1]
-'SpinnerSoundLevel = 0.2                              					'volume level; range [0, 1]
+
 '
 ''///////////////////////-----Ball Release, Guides and Drain-----///////////////////////
-'Dim DrainSoundLevel, BallReleaseSoundLevel, BottomArchBallGuideSoundFactor, FlipperBallGuideSoundFactor, WireformAntiRebountRailSoundFactor
+'Dim DrainSoundLevel, BallReleaseSoundLevel, BottomArchBallGuideSoundFactor, FlipperBallGuideSoundFactor, 
+dim WireformAntiRebountRailSoundFactor
 'dim BlastSoundLevel
 '
 'BlastSoundLevel = 0.8
@@ -17104,652 +16532,46 @@ Const BeaconMotor = 0
 'BallReleaseSoundLevel = 1												'volume level; range [0, 1]
 'BottomArchBallGuideSoundFactor = 0.2									'volume multiplier; must not be zero
 'FlipperBallGuideSoundFactor = 0.015										'volume multiplier; must not be zero
-'WireformAntiRebountRailSoundFactor = 0.04								'volume multiplier; must not be zero?
+WireformAntiRebountRailSoundFactor = 0.04								'volume multiplier; must not be zero?
 '
-''///////////////////////-----Loops and Lanes-----///////////////////////
-'Dim ArchSoundFactor
-'ArchSoundFactor = 0.025/5													'volume multiplier; must not be zero
-'
-''//  RelaysPosition:
-''//  1 = Relays positioned with power board (Provides sound spread from the left and right back channels)
-''//  2 = Relays positioned with GI strings (Provides sound spread from left/right/front/rear surround channels)
-'Const RelaysPosition = 2
-'
-'
-''/////////////////////////////  SOUND PLAYBACK FUNCTIONS  ////////////////////////////
-''/////////////////////////////  POSITIONAL SOUND PLAYBACK METHODS  ////////////////////////////
-'' Positional sound playback methods will play a sound, depending on the X,Y position of the table element or depending on ActiveBall object position
-'' These are similar subroutines that are less complicated to use (e.g. simply use standard parameters for the PlaySound call)
-'' For surround setup - positional sound playback functions will fade between front and rear surround channels and pan between left and right channels
-'' For stereo setup - positional sound playback functions will only pan between left and right channels
-'' For mono setup - positional sound playback functions will not pan between left and right channels and will not fade between front and rear channels
-'
-'' PlaySound full syntax - PlaySound(string, int loopcount, float volume, float pan, float randompitch, int pitch, bool useexisting, bool restart, float front_rear_fade)
-'' Note - These functions will not work (currently) for walls/slingshots as these do not feature a simple, single X,Y position
-'Sub PlaySoundAtLevelStatic(playsoundparams, aVol, tableobj)
-'	PlaySound playsoundparams, 0, aVol * VolumeDial, AudioPan(tableobj), 0, 0, 0, 0, AudioFade(tableobj)
-'End Sub
-'
-'Sub PlaySoundAtLevelExistingStatic(playsoundparams, aVol, tableobj)
-'	PlaySound playsoundparams, 0, aVol * VolumeDial, AudioPan(tableobj), 0, 0, 1, 0, AudioFade(tableobj)
-'End Sub
-'
-'Sub PlaySoundAtLevelStaticLoop(playsoundparams, aVol, tableobj)
-'	PlaySound playsoundparams, -1, aVol * VolumeDial, AudioPan(tableobj), 0, 0, 0, 0, AudioFade(tableobj)
-'End Sub
-'
-'Sub PlaySoundAtLevelStaticRandomPitch(playsoundparams, aVol, randomPitch, tableobj)
-'	PlaySound playsoundparams, 0, aVol * VolumeDial, AudioPan(tableobj), randomPitch, 0, 0, 0, AudioFade(tableobj)
-'End Sub
-'
-'Sub PlaySoundAtLevelActiveBall(playsoundparams, aVol)
-'	PlaySound playsoundparams, 0, aVol * VolumeDial, AudioPan(ActiveBall), 0, 0, 0, 0, AudioFade(ActiveBall)
-'End Sub
-'
-'Sub PlaySoundAtLevelExistingActiveBall(playsoundparams, aVol)
-'	PlaySound playsoundparams, 0, aVol * VolumeDial, AudioPan(ActiveBall), 0, 0, 1, 0, AudioFade(ActiveBall)
-'End Sub
-'
-'Sub PlaySoundAtLeveTimerActiveBall(playsoundparams, aVol, ballvariable)
-'	PlaySound playsoundparams, 0, aVol * VolumeDial, AudioPan(ballvariable), 0, 0, 0, 0, AudioFade(ballvariable)
-'End Sub
-'
-'Sub PlaySoundAtLevelTimerExistingActiveBall(playsoundparams, aVol, ballvariable)
-'	PlaySound playsoundparams, 0, aVol * VolumeDial, AudioPan(ballvariable), 0, 0, 1, 0, AudioFade(ballvariable)
-'End Sub
-'
-'Sub PlaySoundAtLevelRoll(playsoundparams, aVol, pitch)
-'	PlaySound playsoundparams, -1, aVol * VolumeDial, AudioPan(tableobj), randomPitch, 0, 0, 0, AudioFade(tableobj)
-'End Sub
-'
-'' Previous Positional Sound Subs
-'
-'Sub PlaySoundAt(soundname, tableobj)
-'	PlaySound soundname, 1, 1 * VolumeDial, AudioPan(tableobj), 0,0,0, 1, AudioFade(tableobj)
-'End Sub
-'
-'Sub PlaySoundAtVol(soundname, tableobj, aVol)
-'	PlaySound soundname, 1, aVol * VolumeDial, AudioPan(tableobj), 0,0,0, 1, AudioFade(tableobj)
-'End Sub
-'
-'Sub PlaySoundAtBall(soundname)
-'	PlaySoundAt soundname, ActiveBall
-'End Sub
-'
-'Sub PlaySoundAtBallVol (Soundname, aVol)
-'	Playsound soundname, 1,aVol * VolumeDial, AudioPan(ActiveBall), 0,0,0, 1, AudioFade(ActiveBall)
-'End Sub
-'
-'Sub PlaySoundAtBallVolM (Soundname, aVol)
-'	Playsound soundname, 1,aVol * VolumeDial, AudioPan(ActiveBall), 0,0,0, 0, AudioFade(ActiveBall)
-'End Sub
-'
-'Sub PlaySoundAtVolLoops(sound, tableobj, Vol, Loops)
-'	PlaySound sound, Loops, Vol * VolumeDial, AudioPan(tableobj), 0,0,0, 1, AudioFade(tableobj)
-'End Sub
-'
-'
-'' *********************************************************************
-''                     Fleep  Supporting Ball & Sound Functions
-'' *********************************************************************
-'
-'Function AudioFade(tableobj) ' Fades between front and back of the table (for surround systems or 2x2 speakers, etc), depending on the Y position on the table. "table1" is the name of the table
-'  Dim tmp
-'    tmp = tableobj.y * 2 / tableheight-1
-'
-'	if tmp > 7000 Then
-'		tmp = 7000
-'	elseif tmp < -7000 Then
-'		tmp = -7000
-'	end if
-'
-'    If tmp > 0 Then
-'		AudioFade = Csng(tmp ^10)
-'    Else
-'        AudioFade = Csng(-((- tmp) ^10) )
-'    End If
-'End Function
-'
-'Function AudioFadePosY(positiony) ' Fades between front and back of the table (for surround systems or 2x2 speakers, etc), depending on the Y position on the table. "table1" is the name of the table
-'  Dim tmp
-'    tmp = positiony * 2 / tableheight-1
-'
-'	if tmp > 7000 Then
-'		tmp = 7000
-'	elseif tmp < -7000 Then
-'		tmp = -7000
-'	end if
-'
-'    If tmp > 0 Then
-'		AudioFadePosY = Csng(tmp ^10)
-'    Else
-'        AudioFadePosY = Csng(-((- tmp) ^10) )
-'    End If
-'End Function
-'
-'Function AudioPan(tableobj) ' Calculates the pan for a tableobj based on the X position on the table. "table1" is the name of the table
-'    Dim tmp
-'    tmp = tableobj.x * 2 / tablewidth-1
-'
-'	if tmp > 7000 Then
-'		tmp = 7000
-'	elseif tmp < -7000 Then
-'		tmp = -7000
-'	end if
-'
-'    If tmp > 0 Then
-'        AudioPan = Csng(tmp ^10)
-'    Else
-'        AudioPan = Csng(-((- tmp) ^10) )
-'    End If
-'End Function
-'
-'Function AudioPanPosX(positionx) ' Calculates the pan for a tableobj based on the X position on the table. "table1" is the name of the table
-'    Dim tmp
-'    tmp = positionx * 2 / tablewidth-1
-'
-'	if tmp > 7000 Then
-'		tmp = 7000
-'	elseif tmp < -7000 Then
-'		tmp = -7000
-'	end if
-'
-'    If tmp > 0 Then
-'        AudioPanPosX = Csng(tmp ^10)
-'    Else
-'        AudioPanPosX = Csng(-((- tmp) ^10) )
-'    End If
-'End Function
-'
-'Function Vol(ball) ' Calculates the volume of the sound based on the ball speed
-'	Vol = Csng(BallVel(ball) ^2)
-'End Function
-'
-'Function Volz(ball) ' Calculates the volume of the sound based on the ball speed
-'	Volz = Csng((ball.velz) ^2)
-'End Function
-'
-'Function Pitch(ball) ' Calculates the pitch of the sound based on the ball speed
-'	Pitch = BallVel(ball) * 20
-'End Function
-'
-'Function BallVel(ball) 'Calculates the ball speed
-'	BallVel = INT(SQR((ball.VelX ^2) + (ball.VelY ^2) ) )
-'End Function
-'
-'Function VolPlayfieldRoll(ball) ' Calculates the roll volume of the sound based on the ball speed
-'	VolPlayfieldRoll = RollingSoundFactor * 0.0005 * Csng(BallVel(ball) ^3)
-'End Function
-'
-'Function PitchPlayfieldRoll(ball) ' Calculates the roll pitch of the sound based on the ball speed
-'	'PitchPlayfieldRoll = BallVel(ball) ^2 * 15
-'	PitchPlayfieldRoll = BallVel(ball) ^2 * 10
-'End Function
-'
-'Function RndInt(min, max)
-'	RndInt = Int(Rnd() * (max-min + 1) + min)' Sets a random number integer between min and max
-'End Function
-'
-'Function RndNum(min, max)
-'	RndNum = Rnd() * (max-min) + min' Sets a random number between min and max
-'End Function
-'
-''/////////////////////////////  GENERAL SOUND SUBROUTINES  ////////////////////////////
-'Sub SoundStartButton()
-'	PlaySound ("Start_Button"), 0, StartButtonSoundLevel, 0, 0.25
-'End Sub
-'
-'Sub SoundNudgeLeft()
-'	PlaySound ("Nudge_" & Int(Rnd*2)+1), 0, NudgeLeftSoundLevel * VolumeDial, -0.1, 0.25
-'End Sub
-'
-'Sub SoundNudgeRight()
-'	PlaySound ("Nudge_" & Int(Rnd*2)+1), 0, NudgeRightSoundLevel * VolumeDial, 0.1, 0.25
-'End Sub
-'
-'Sub SoundNudgeCenter()
-'	PlaySound ("Nudge_" & Int(Rnd*2)+1), 0, NudgeCenterSoundLevel * VolumeDial, 0, 0.25
-'End Sub
-'
-'
-'Sub SoundPlungerPull()
-'	PlaySoundAtLevelStatic ("Plunger_Pull_1"), PlungerPullSoundLevel, Plunger
-'End Sub
-'
-'Sub SoundPlungerReleaseBall()
-'	PlaySoundAtLevelStatic ("Plunger_Release_Ball"), PlungerReleaseSoundLevel, Plunger	
-'End Sub
-'
-'Sub SoundPlungerReleaseNoBall()
-'	PlaySoundAtLevelStatic ("Plunger_Release_No_Ball"), PlungerReleaseSoundLevel, Plunger
-'End Sub
-'
-'
-''/////////////////////////////  KNOCKER SOLENOID  ////////////////////////////
-'Sub KnockerSolenoidSound()
-'	PlaySoundAtLevelStatic SoundFX("Knocker_1",DOFKnocker), KnockerSoundLevel, KnockerPosition
-'End Sub
-'
-''/////////////////////////////  DRAIN SOUNDS  ////////////////////////////
-'Sub RandomSoundDrain(drainswitch)
-'	PlaySoundAtLevelStatic ("Drain_" & Int(Rnd*11)+1), DrainSoundLevel, drainswitch
-'End Sub
-'
-''/////////////////////////////  TROUGH BALL RELEASE SOLENOID SOUNDS  ////////////////////////////
-'
-'Sub RandomSoundBallRelease(drainswitch)
-'	PlaySoundAtLevelStatic SoundFX("BallRelease" & Int(Rnd*7)+1,DOFContactors), BallReleaseSoundLevel, drainswitch
-'End Sub
-'
-''/////////////////////////////  SLINGSHOT SOLENOID SOUNDS  ////////////////////////////
-'Sub RandomSoundSlingshotLeft(sling)
-'	PlaySoundAtLevelStatic SoundFX("Sling_L" & Int(Rnd*10)+1,DOFContactors), SlingshotSoundLevel, Sling
-'End Sub
-'
-'Sub RandomSoundSlingshotRight(sling)
-'	PlaySoundAtLevelStatic SoundFX("Sling_R" & Int(Rnd*8)+1,DOFContactors), SlingshotSoundLevel, Sling
-'End Sub
-'
-''/////////////////////////////  BUMPER SOLENOID SOUNDS  ////////////////////////////
-'Sub RandomSoundBumperTop(Bump)
-'	PlaySoundAtLevelStatic SoundFX("Bumpers_Top_" & Int(Rnd*5)+1,DOFContactors), Vol(ActiveBall) * BumperSoundFactor, Bump
-'End Sub
-'
-'Sub RandomSoundBumperMiddle(Bump)
-'	PlaySoundAtLevelStatic SoundFX("Bumpers_Middle_" & Int(Rnd*5)+1,DOFContactors), Vol(ActiveBall) * BumperSoundFactor, Bump
-'End Sub
-'
-'Sub RandomSoundBumperBottom(Bump)
-'	PlaySoundAtLevelStatic SoundFX("Bumpers_Bottom_" & Int(Rnd*5)+1,DOFContactors), Vol(ActiveBall) * BumperSoundFactor, Bump
-'End Sub
-'
-''/////////////////////////////  SPINNER SOUNDS  ////////////////////////////
-'Sub SoundSpinner(spinnerswitch)
-'	PlaySoundAtLevelStatic ("Spinner"), SpinnerSoundLevel, spinnerswitch
-'End Sub
-'
-'
-''/////////////////////////////  FLIPPER BATS SOUND SUBROUTINES  ////////////////////////////
-''/////////////////////////////  FLIPPER BATS SOLENOID ATTACK SOUND  ////////////////////////////
-'Sub SoundFlipperUpAttackLeft(flipper)
-'	FlipperUpAttackLeftSoundLevel = RndNum(FlipperUpAttackMinimumSoundLevel, FlipperUpAttackMaximumSoundLevel)
-'	PlaySoundAtLevelStatic ("Flipper_Attack-L01"), FlipperUpAttackLeftSoundLevel, flipper
-'End Sub
-'
-'Sub SoundFlipperUpAttackRight(flipper)
-'	FlipperUpAttackRightSoundLevel = RndNum(FlipperUpAttackMinimumSoundLevel, FlipperUpAttackMaximumSoundLevel)
-'	PlaySoundAtLevelStatic ("Flipper_Attack-R01"), FlipperUpAttackLeftSoundLevel, flipper
-'End Sub
-'
-''/////////////////////////////  FLIPPER BATS SOLENOID CORE SOUND  ////////////////////////////
-'Sub RandomSoundFlipperUpLeft(flipper)
-'	PlaySoundAtLevelStatic SoundFX("Flipper_L0" & Int(Rnd*9)+1,DOFFlippers), FlipperLeftHitParm, Flipper
-'End Sub
-'
-'Sub RandomSoundFlipperUpRight(flipper)
-'	PlaySoundAtLevelStatic SoundFX("Flipper_R0" & Int(Rnd*9)+1,DOFFlippers), FlipperRightHitParm, Flipper
-'End Sub
-'
-'Sub RandomSoundReflipUpLeft(flipper)
-'	PlaySoundAtLevelStatic SoundFX("Flipper_ReFlip_L0" & Int(Rnd*3)+1,DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
-'End Sub
-'
-'Sub RandomSoundReflipUpRight(flipper)
-'	PlaySoundAtLevelStatic SoundFX("Flipper_ReFlip_R0" & Int(Rnd*3)+1,DOFFlippers), (RndNum(0.8, 1))*FlipperUpSoundLevel, Flipper
-'End Sub
-'
-'Sub RandomSoundFlipperDownLeft(flipper)
-'	PlaySoundAtLevelStatic SoundFX("Flipper_Left_Down_" & Int(Rnd*7)+1,DOFFlippers), FlipperDownSoundLevel, Flipper
-'End Sub
-'
-'Sub RandomSoundFlipperDownRight(flipper)
-'	PlaySoundAtLevelStatic SoundFX("Flipper_Right_Down_" & Int(Rnd*8)+1,DOFFlippers), FlipperDownSoundLevel, Flipper
-'End Sub
-'
-''/////////////////////////////  FLIPPER BATS BALL COLLIDE SOUND  ////////////////////////////
-'
-'Sub LeftFlipperCollide(parm)
-'	FlipperLeftHitParm = parm/10
-'	If FlipperLeftHitParm > 1 Then
-'		FlipperLeftHitParm = 1
-'	End If
-'	FlipperLeftHitParm = FlipperUpSoundLevel * FlipperLeftHitParm
-'	RandomSoundRubberFlipper(parm)
-'End Sub
-'
-'Sub RightFlipperCollide(parm)
-'	FlipperRightHitParm = parm/10
-'	If FlipperRightHitParm > 1 Then
-'		FlipperRightHitParm = 1
-'	End If
-'	FlipperRightHitParm = FlipperUpSoundLevel * FlipperRightHitParm
-'	RandomSoundRubberFlipper(parm)
-'End Sub
-'
-'Sub RandomSoundRubberFlipper(parm)
-'	PlaySoundAtLevelActiveBall ("Flipper_Rubber_" & Int(Rnd*7)+1), parm  * RubberFlipperSoundFactor
-'End Sub
-'
-''/////////////////////////////  ROLLOVER SOUNDS  ////////////////////////////
-'Sub RandomSoundRollover()
-'	PlaySoundAtLevelActiveBall ("Rollover_" & Int(Rnd*4)+1), RolloverSoundLevel
-'End Sub
-'
-'Sub Rollovers_Hit(idx)
-'	RandomSoundRollover
-'End Sub
-'
-''/////////////////////////////  VARIOUS PLAYFIELD SOUND SUBROUTINES  ////////////////////////////
-''/////////////////////////////  RUBBERS AND POSTS  ////////////////////////////
-''/////////////////////////////  RUBBERS - EVENTS  ////////////////////////////
-'Sub Rubbers_Hit(idx)
-'	'debug.print "rubber"
-'	dim finalspeed
-'	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-'	If finalspeed > 5 then		
-'		RandomSoundRubberStrong 1
-'	End if
-'	If finalspeed <= 5 then
-'		RandomSoundRubberWeak()
-'	End If	
-'End Sub
-'
-''/////////////////////////////  FLASHERS RELAY  ////////////////////////////
-'Sub Sound_Flasher_Relay(toggle, tableobj)
-'	Select Case toggle
-'		Case 1
-'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic ("Relay_On"), RelayFlasherSoundLevel, GIUpperPosition
-'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic ("Relay_On"), RelayFlasherSoundLevel, tableobj
-'		Case 0
-'			If RelaysPosition = 1 Then PlaySoundAtLevelStatic ("Relay_Off"), RelayFlasherSoundLevel, GIUpperPosition
-'			If RelaysPosition = 2 Then PlaySoundAtLevelStatic ("Relay_Off"), RelayFlasherSoundLevel, tableobj
-'	End Select
-'End Sub
-'
-'
-''/////////////////////////////  RUBBERS AND POSTS - STRONG IMPACTS  ////////////////////////////
-'Sub RandomSoundRubberStrong(voladj)
-'	Select Case Int(Rnd*10)+1
-'		Case 1 : PlaySoundAtLevelActiveBall ("Rubber_Strong_1"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 2 : PlaySoundAtLevelActiveBall ("Rubber_Strong_2"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 3 : PlaySoundAtLevelActiveBall ("Rubber_Strong_3"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 4 : PlaySoundAtLevelActiveBall ("Rubber_Strong_4"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 5 : PlaySoundAtLevelActiveBall ("Rubber_Strong_5"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 6 : PlaySoundAtLevelActiveBall ("Rubber_Strong_6"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 7 : PlaySoundAtLevelActiveBall ("Rubber_Strong_7"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 8 : PlaySoundAtLevelActiveBall ("Rubber_Strong_8"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 9 : PlaySoundAtLevelActiveBall ("Rubber_Strong_9"), Vol(ActiveBall) * RubberStrongSoundFactor*voladj
-'		Case 10 : PlaySoundAtLevelActiveBall ("Rubber_1_Hard"), Vol(ActiveBall) * RubberStrongSoundFactor * 0.6*voladj
-'	End Select
-'End Sub
-'
-''/////////////////////////////  RUBBERS AND POSTS - WEAK IMPACTS  ////////////////////////////
-'Sub RandomSoundRubberWeak()
-'	PlaySoundAtLevelActiveBall ("Rubber_" & Int(Rnd*9)+1), Vol(ActiveBall) * RubberWeakSoundFactor
-'End Sub
-'
-''/////////////////////////////  WALL IMPACTS  ////////////////////////////
-'Sub Walls_Hit(idx)
-'	RandomSoundWall()      
-'End Sub
-'
-'Sub RandomSoundWall()
-'	dim finalspeed
-'	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-'	If finalspeed > 16 then 
-'		Select Case Int(Rnd*5)+1
-'			Case 1 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_1"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 2 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_2"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 3 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_5"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 4 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_7"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 5 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_9"), Vol(ActiveBall) * WallImpactSoundFactor
-'		End Select
-'	End if
-'	If finalspeed >= 6 AND finalspeed <= 16 then
-'		Select Case Int(Rnd*4)+1
-'			Case 1 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_3"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 2 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_4"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 3 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_6"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 4 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_8"), Vol(ActiveBall) * WallImpactSoundFactor
-'		End Select
-'	End If
-'	If finalspeed < 6 Then
-'		Select Case Int(Rnd*3)+1
-'			Case 1 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_4"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 2 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_6"), Vol(ActiveBall) * WallImpactSoundFactor
-'			Case 3 : PlaySoundAtLevelExistingActiveBall ("Wall_Hit_8"), Vol(ActiveBall) * WallImpactSoundFactor
-'		End Select
-'	End if
-'End Sub
-'
-''/////////////////////////////  METAL TOUCH SOUNDS  ////////////////////////////
-'Sub RandomSoundMetal()
-'	PlaySoundAtLevelActiveBall ("Metal_Touch_" & Int(Rnd*13)+1), Vol(ActiveBall) * MetalImpactSoundFactor
+
 'End Sub
 '
 ''/////////////////////////////  METAL - EVENTS  ////////////////////////////
 '
-'Sub Metals_Hit (idx)
-''	RandomSoundMetal
-'	MetalGuideSideHit
-'End Sub
 
-'sub LoopWalls_Hit (idx)
-'	'PlaySound("wireloop" & Int(Rnd*3)+1), -1, VolPlayfieldRoll(activeball) * 1.1 * VolumeDial, AudioPan(activeball), 0, BallPitchV(activeball), 1, 0, AudioFade(activeball)
-'	'RandomSoundMetal
-'end sub
 
 Sub ShooterDiverter_collide(idx)
 '	RandomSoundMetal
 	MetalGuideSideHit
 End Sub
 '
-''/////////////////////////////  BOTTOM ARCH BALL GUIDE  ////////////////////////////
-''/////////////////////////////  BOTTOM ARCH BALL GUIDE - SOFT BOUNCES  ////////////////////////////
-'Sub RandomSoundBottomArchBallGuide()
-'	dim finalspeed
-'	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-'	If finalspeed > 16 then 
-'		PlaySoundAtLevelActiveBall ("Apron_Bounce_"& Int(Rnd*2)+1), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-'	End if
-'	If finalspeed >= 6 AND finalspeed <= 16 then
-'		Select Case Int(Rnd*2)+1
-'			Case 1 : PlaySoundAtLevelActiveBall ("Apron_Bounce_1"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-'			Case 2 : PlaySoundAtLevelActiveBall ("Apron_Bounce_Soft_1"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-'		End Select
-'	End If
-'	If finalspeed < 6 Then
-'		Select Case Int(Rnd*2)+1
-'			Case 1 : PlaySoundAtLevelActiveBall ("Apron_Bounce_Soft_1"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-'			Case 2 : PlaySoundAtLevelActiveBall ("Apron_Medium_3"), Vol(ActiveBall) * BottomArchBallGuideSoundFactor
-'		End Select
-'	End if
-'End Sub
 '
-''/////////////////////////////  BOTTOM ARCH BALL GUIDE - HARD HITS  ////////////////////////////
-'Sub RandomSoundBottomArchBallGuideHardHit()
-'	PlaySoundAtLevelActiveBall ("Apron_Hard_Hit_" & Int(Rnd*3)+1), BottomArchBallGuideSoundFactor * 0.25
-'End Sub
-'
-'Sub Apron_Hit (idx)
-'	If Abs(cor.ballvelx(activeball.id) < 4) and cor.ballvely(activeball.id) > 7 then
-'		RandomSoundBottomArchBallGuideHardHit()
-'	Else
-'		RandomSoundBottomArchBallGuide
-'	End If
-'End Sub
-'
-''/////////////////////////////  FLIPPER BALL GUIDE  ////////////////////////////
-'Sub RandomSoundFlipperBallGuide()
-'	dim finalspeed
-'	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-'	If finalspeed > 16 then 
-'		Select Case Int(Rnd*2)+1
-'			Case 1 : PlaySoundAtLevelActiveBall ("Apron_Hard_1"),  Vol(ActiveBall) * FlipperBallGuideSoundFactor
-'			Case 2 : PlaySoundAtLevelActiveBall ("Apron_Hard_2"),  Vol(ActiveBall) * 0.8 * FlipperBallGuideSoundFactor
-'		End Select
-'	End if
-'	If finalspeed >= 6 AND finalspeed <= 16 then
-'		PlaySoundAtLevelActiveBall ("Apron_Medium_" & Int(Rnd*3)+1),  Vol(ActiveBall) * FlipperBallGuideSoundFactor
-'	End If
-'	If finalspeed < 6 Then
-'		PlaySoundAtLevelActiveBall ("Apron_Soft_" & Int(Rnd*7)+1),  Vol(ActiveBall) * FlipperBallGuideSoundFactor
-'	End If
-'End Sub
-'
-''/////////////////////////////  WIREFORM ANTI-REBOUNT RAILS  ////////////////////////////
-'Sub RandomSoundWireformAntiRebountRail()
-' 	dim finalspeed
-'  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-' 	If finalspeed > 2 then 
-' 		Select Case Int(Rnd*5)+1
-'			Case 1 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_3"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
-'			Case 2 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_4"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
-'			Case 3 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_5"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
-'			Case 4 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_6"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
-'			Case 5 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_7"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
-'		End Select
-'	End if
-'	If finalspeed < 2 Then
-' 		Select Case Int(Rnd*3)+1
-'			Case 1 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_1"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
-'			Case 2 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_2"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
-'			Case 3 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_8"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
-'		End Select
-'	End if
-'End Sub
-'
-'Sub Wall17_hit() : RandomSoundWireformAntiRebountRail() : End Sub
-'Sub Wall22_hit() : RandomSoundWireformAntiRebountRail() : End Sub
-'
-''/////////////////////////////  TARGET HIT SOUNDS  ////////////////////////////
-'Sub RandomSoundTargetHitStrong()
-'	PlaySoundAtLevelActiveBall SoundFX("Target_Hit_" & Int(Rnd*4)+5,DOFTargets), Vol(ActiveBall) * 0.45 * TargetSoundFactor
-'End Sub
-'
-'Sub RandomSoundTargetHitWeak()		
-'	PlaySoundAtLevelActiveBall SoundFX("Target_Hit_" & Int(Rnd*4)+1,DOFTargets), Vol(ActiveBall) * TargetSoundFactor
-'End Sub
-'
-'Sub PlayTargetSound()
-'	dim finalspeed
-'	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
-'	If finalspeed > 10 then
-'		RandomSoundTargetHitStrong()
-'		RandomSoundBallBouncePlayfieldSoft Activeball
-'	Else 
-'		RandomSoundTargetHitWeak()
-'	End If	
-'End Sub
-'
-'Sub Targets_Hit (idx)
-'	PlayTargetSound	
-''	debug.print "targets bounce"
-'	TargetBouncer Activeball, 1
-'End Sub
-'
-''/////////////////////////////  BALL BOUNCE SOUNDS  ////////////////////////////
-'Sub RandomSoundBallBouncePlayfieldSoft(aBall)
-'	Select Case Int(Rnd*9)+1
-'		Case 1 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Soft_1"), volz(aBall) * BallBouncePlayfieldSoftFactor, aBall
-'		Case 2 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Soft_2"), volz(aBall) * BallBouncePlayfieldSoftFactor * 0.5, aBall
-'		Case 3 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Soft_3"), volz(aBall) * BallBouncePlayfieldSoftFactor * 0.8, aBall
-'		Case 4 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Soft_4"), volz(aBall) * BallBouncePlayfieldSoftFactor * 0.5, aBall
-'		Case 5 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Soft_5"), volz(aBall) * BallBouncePlayfieldSoftFactor, aBall
-'		Case 6 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Hard_1"), volz(aBall) * BallBouncePlayfieldSoftFactor * 0.2, aBall
-'		Case 7 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Hard_2"), volz(aBall) * BallBouncePlayfieldSoftFactor * 0.2, aBall
-'		Case 8 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Hard_5"), volz(aBall) * BallBouncePlayfieldSoftFactor * 0.2, aBall
-'		Case 9 : PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Hard_7"), volz(aBall) * BallBouncePlayfieldSoftFactor * 0.3, aBall
-'	End Select
-'End Sub
-'
-'Sub RandomSoundBallBouncePlayfieldHard(aBall)
-'	PlaySoundAtLevelStatic ("Ball_Bounce_Playfield_Hard_" & Int(Rnd*7)+1), volz(aBall) * BallBouncePlayfieldHardFactor, aBall
-'End Sub
-'
-''/////////////////////////////  DELAYED DROP - TO PLAYFIELD - SOUND  ////////////////////////////
-'Sub RandomSoundDelayedBallDropOnPlayfield(aBall)
-'	Select Case Int(Rnd*5)+1
-'		Case 1 : PlaySoundAtLevelStatic ("Ball_Drop_Playfield_1_Delayed"), DelayedBallDropOnPlayfieldSoundLevel, aBall
-'		Case 2 : PlaySoundAtLevelStatic ("Ball_Drop_Playfield_2_Delayed"), DelayedBallDropOnPlayfieldSoundLevel, aBall
-'		Case 3 : PlaySoundAtLevelStatic ("Ball_Drop_Playfield_3_Delayed"), DelayedBallDropOnPlayfieldSoundLevel, aBall
-'		Case 4 : PlaySoundAtLevelStatic ("Ball_Drop_Playfield_4_Delayed"), DelayedBallDropOnPlayfieldSoundLevel, aBall
-'		Case 5 : PlaySoundAtLevelStatic ("Ball_Drop_Playfield_5_Delayed"), DelayedBallDropOnPlayfieldSoundLevel, aBall
-'	End Select
-'End Sub
-'
-''/////////////////////////////  BALL GATES AND BRACKET GATES SOUNDS  ////////////////////////////
-'
-'Sub SoundPlayfieldGate()			
-'	PlaySoundAtLevelStatic ("Gate_FastTrigger_" & Int(Rnd*2)+1), GateSoundLevel, Activeball
-'End Sub
-'
-'Sub SoundHeavyGate()
-'	PlaySoundAtLevelStatic ("Gate_2"), GateSoundLevel, Activeball
-'End Sub
-'
-'Sub Gates_hit(idx)
-'	SoundHeavyGate
-'End Sub
-'
-'Sub GatesWire_hit(idx)	
-'	SoundPlayfieldGate	
-'End Sub	
-'
-''/////////////////////////////  SAUCERS (KICKER HOLES)  ////////////////////////////
-'
-'Sub SoundSaucerLock()
-'	PlaySoundAtLevelStatic ("Saucer_Enter_" & Int(Rnd*2)+1), SaucerLockSoundLevel, Activeball
-'End Sub
-'
-'Sub SoundSaucerKick(scenario, saucer)
-'	Select Case scenario
-'		Case 0: PlaySoundAtLevelStatic SoundFX("Saucer_Empty", DOFContactors), SaucerKickSoundLevel, saucer
-'		Case 1: PlaySoundAtLevelStatic SoundFX("Saucer_Kick", DOFContactors), SaucerKickSoundLevel, saucer
-'	End Select
-'End Sub
-'
-''///////////////////////////  DROP TARGET HIT SOUNDS  ///////////////////////////
-'
-'Sub RandomSoundDropTargetReset(obj)
-'	PlaySoundAtLevelStatic SoundFX("Drop_Target_Reset_" & Int(Rnd*6)+1,DOFContactors), 1, obj
-'End Sub
-'
-'Sub SoundDropTargetDrop(obj)
-'	PlaySoundAtLevelStatic ("Drop_Target_Down_" & Int(Rnd*6)+1), 200, obj
-'End Sub
-'
-'
-''/////////////////////////////  BALL COLLISION SOUND  ////////////////////////////
-'Sub OnBallBallCollision(ball1, ball2, velocity)
-'	Dim snd, mball
-'    for each mball in GrabMag.Balls
-'		'need to add a check here if ID's are valid
-'		'debug.print mball.ID
-'		If Not IsEmpty(mball) then
-'			if mball.ID = ball1.ID then exit sub
-'			'if mball.ID = ball1.ID OR mball.ID = ball2.ID then exit sub
-'		end if
-'    next
-'	Select Case Int(Rnd*7)+1
-'		Case 1 : snd = "Ball_Collide_1"
-'		Case 2 : snd = "Ball_Collide_2"
-'		Case 3 : snd = "Ball_Collide_3"
-'		Case 4 : snd = "Ball_Collide_4"
-'		Case 5 : snd = "Ball_Collide_5"
-'		Case 6 : snd = "Ball_Collide_6"
-'		Case 7 : snd = "Ball_Collide_7"
-'	End Select
-'
-'	PlaySound (snd), 0, Csng(velocity) ^2 / 200 * BallWithBallCollisionSoundFactor * VolumeDial, AudioPan(ball1), 0, Pitch(ball1), 0, 0, AudioFade(ball1)
-'End Sub
-'
-'
-'
-'
-''/////////////////////////////////////////////////////////////////
-''					End Mechanical Sounds
-''/////////////////////////////////////////////////////////////////
+'/////////////////////////////  WIREFORM ANTI-REBOUNT RAILS  ////////////////////////////
+Sub RandomSoundWireformAntiRebountRail()
+ 	dim finalspeed
+  	finalspeed=SQR(activeball.velx * activeball.velx + activeball.vely * activeball.vely)
+ 	If finalspeed > 2 then 
+ 		Select Case Int(Rnd*5)+1
+			Case 1 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_3"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
+			Case 2 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_4"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
+			Case 3 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_5"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
+			Case 4 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_6"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
+			Case 5 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_7"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
+		End Select
+	End if
+	If finalspeed < 2 Then
+ 		Select Case Int(Rnd*3)+1
+			Case 1 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_1"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
+			Case 2 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_2"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
+			Case 3 : PlaySoundAtLevelActiveBall ("TOM_Wireform_Anti_Rebound_Rail_8"),  Vol(ActiveBall) * WireformAntiRebountRailSoundFactor
+		End Select
+	End if
+End Sub
+
+Sub Wall17_hit() : RandomSoundWireformAntiRebountRail() : End Sub
+Sub Wall22_hit() : RandomSoundWireformAntiRebountRail() : End Sub
+
 
 
 '******************************************************
@@ -18192,6 +17014,7 @@ Sub FlashFlasher(nr)
 					VRBGFL4_2.visible = 1
 					VRBGFL4_3.visible = 1
 					VRBGFL4_4.visible = 1
+					VRBGFL4_5.visible = 1
 				End If
 			Case 2:
 				FlasherPL_BS_WhiteFL.visible = 1
@@ -18209,6 +17032,7 @@ Sub FlashFlasher(nr)
 					VRBGFL6_2.visible = 1
 					VRBGFL6_3.visible = 1
 					VRBGFL6_4.visible = 1
+					VRBGFL6_5.visible = 1
 				End If
 			Case 3:
 				FlasherPL_BS_PurpleLFL.visible = 1
@@ -18226,6 +17050,7 @@ Sub FlashFlasher(nr)
 					VRBGFL4_2.visible = 1
 					VRBGFL4_3.visible = 1
 					VRBGFL4_4.visible = 1
+					VRBGFL4_5.visible = 1
 				End If
 			Case 4:
 				FlasherPL_BS_RedFL.visible = 1
@@ -18274,6 +17099,7 @@ Sub FlashFlasher(nr)
 					VRBGFL5_2.visible = 1
 					VRBGFL5_3.visible = 1
 					VRBGFL5_4.visible = 1
+					VRBGFL5_5.visible = 1
 				End If
 			Case 7:
 				FlasherPL_BS_PurpleRFL.visible = 1
@@ -18291,6 +17117,7 @@ Sub FlashFlasher(nr)
 					VRBGFL5_2.visible = 1
 					VRBGFL5_3.visible = 1
 					VRBGFL5_4.visible = 1
+					VRBGFL5_5.visible = 1
 				End If
 		end Select
 
@@ -18326,6 +17153,7 @@ Sub FlashFlasher(nr)
 				VRBGFL4_2.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL4_3.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL4_4.opacity = 100 * ObjLevel(nr)^2
+				VRBGFL4_5.opacity = 100 * ObjLevel(nr)^3
 			End If
 
 			if ObjLevel(nr) < 0.6 And flash1off = 0 then Call Sound_Flasher_Relay(0, LightRelayPosition) : flash1off = 1
@@ -18346,6 +17174,7 @@ Sub FlashFlasher(nr)
 				VRBGFL6_2.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL6_3.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL6_4.opacity = 100 * ObjLevel(nr)^2
+				VRBGFL6_5.opacity = 100 * ObjLevel(nr)^2
 			End If
 		Case 3:
 			LightFlash3a.IntensityScale = 2 * ObjLevel(nr)^1
@@ -18365,6 +17194,7 @@ Sub FlashFlasher(nr)
 				VRBGFL4_2.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL4_3.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL4_4.opacity = 100 * ObjLevel(nr)^2
+				VRBGFL4_5.opacity = 100 * ObjLevel(nr)^3
 			End If
 			if ObjLevel(nr) < 0.6 And flash3off = 0 then Call Sound_Flasher_Relay(0, LightRelayPosition) : flash3off = 1
 		Case 4:
@@ -18420,6 +17250,7 @@ Sub FlashFlasher(nr)
 				VRBGFL5_2.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL5_3.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL5_4.opacity = 100 * ObjLevel(nr)^2
+				VRBGFL5_5.opacity = 100 * ObjLevel(nr)^3
 			End If
 			LightFlash6a.IntensityScale = 2 * ObjLevel(nr)^1
 			LightFlash6b.IntensityScale = 2 * ObjLevel(nr)^2
@@ -18443,6 +17274,7 @@ Sub FlashFlasher(nr)
 				VRBGFL5_2.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL5_3.opacity = 100 * ObjLevel(nr)^2
 				VRBGFL5_4.opacity = 100 * ObjLevel(nr)^2
+				VRBGFL5_5.opacity = 100 * ObjLevel(nr)^3
 			End If
 			LightFlash7a.IntensityScale = 2 * ObjLevel(nr)^1
 			LightFlash7b.IntensityScale = 2 * ObjLevel(nr)^2
@@ -18471,6 +17303,7 @@ Sub FlashFlasher(nr)
 						VRBGFL4_2.visible = 0
 						VRBGFL4_3.visible = 0
 						VRBGFL4_4.visible = 0
+						VRBGFL4_5.visible = 0
 					End If
 					
 				end if
@@ -18490,6 +17323,7 @@ Sub FlashFlasher(nr)
 					VRBGFL6_2.visible = 0
 					VRBGFL6_3.visible = 0
 					VRBGFL6_4.visible = 0
+					VRBGFL6_5.visible = 0
 				End If
 			Case 3:
 				if ObjLevel(1) < 0 then 
@@ -18508,6 +17342,7 @@ Sub FlashFlasher(nr)
 						VRBGFL4_2.visible = 0
 						VRBGFL4_3.visible = 0
 						VRBGFL4_4.visible = 0
+						VRBGFL4_5.visible = 0
 					End If
 				end if
 			Case 4:
@@ -18558,6 +17393,7 @@ Sub FlashFlasher(nr)
 						VRBGFL5_2.visible = 0
 						VRBGFL5_3.visible = 0
 						VRBGFL5_4.visible = 0
+						VRBGFL5_5.visible = 0
 					End If
 				end if
 			Case 7:
@@ -18577,6 +17413,7 @@ Sub FlashFlasher(nr)
 						VRBGFL5_2.visible = 0
 						VRBGFL5_3.visible = 0
 						VRBGFL5_4.visible = 0
+						VRBGFL5_5.visible = 0
 					End If
 				end if
 		end Select
@@ -19317,6 +18154,10 @@ sub GIUpdates(ByVal aLvl)
 
 	if Not gilvl = aLvl then
 
+		if vrroom = 1 Then
+			pTunnel_light.opacity = 100 + (300 * gilvl)
+		end if
+
 		SetInsertBlooms aLvl
 
 		if cGI.state = 1 Then
@@ -19364,10 +18205,12 @@ sub GIUpdates(ByVal aLvl)
 		for Each x in FlashBases : x.blenddisablelighting = FlashOffDL : next
 
 		If VRRoom > 0 Then
-			for Each x in GI_VRBG : x.opacity=aLvl * 10 : next
+			for Each x in GI_VRBG : x.opacity=aLvl^3 * 10 : next
 		End If
 
-		pmetalwalls.blenddisablelighting = 0.1 * aLvl^2 + 0.1
+'		pmetalwalls.blenddisablelighting = 0.1 * aLvl^2 + 0.1
+		pMetalsOn.opacity = 120 * aLvl^2
+		pMetalsOn.color = ShipGiColor
 		Plastics.blenddisablelighting = 1.2 * aLvl
 		PlasticRamp.blenddisablelighting = 0.1*aLvl
 		LeftPlastic.blenddisablelighting = 0.05*aLvl - 0.05
@@ -19451,13 +18294,13 @@ sub gion
 		If B2son then Controller.B2SSetData 8, 1 'Backglass logo ON
 	end if
 
-'	Flasher001.Opacity = 200
+'	HatchFlasher001.Opacity = 200
 '	gauge_rollinside.blenddisablelighting = 15
 
 end Sub
 
 sub gioff
-'	Flasher001.Opacity = 70
+'	HatchFlasher001.Opacity = 70
 '	gauge_rollinside.blenddisablelighting = 2
 
 '	dim x
@@ -20744,7 +19587,16 @@ End Sub
 '*********************
 DIM VRThings
 If VRRoom > 0 Then
-	DMD.visible = 1
+'	PinCab_Backbox.image="Pincab_Backbox_DM"
+	if HasPuP then
+		fDMD.visible = 0 : pupDMD.visible = 1
+		VRBGSpeaker.visible = 1
+		VRBGSpeaker.imageA = "Pincab_Speaker_pup"
+	Else
+		fDMD.visible = 1 : pupDMD.visible = 0
+		VRBGSpeaker.visible = 1
+		VRBGSpeaker.imageA = "Pincab_Speaker2"
+	end if
 
 	PinCab_Backglass.blenddisablelighting = 5
 	PinCab_Rails.visible = 1
@@ -20778,13 +19630,15 @@ If VRRoom > 0 Then
 	SetBackglass
 	PinCab_Backglass.visible = 0
 	BGDark.visible = 1
-	VRBGSpeaker.visible = 1
+'	VRBGSpeaker.visible = 1
 	for Each VRThings in GI_VRBG : VRThings.visible = 1 : next
 Else
 	for each VRThings in VR_360:VRThings.visible = 0:Next
 	for each VRThings in VR_Cab:VRThings.visible = 0:Next
 	for each VRThings in VR_Min:VRThings.visible = 0:Next
 	for Each VRThings in GI_VRBG : VRThings.visible = 0 : next
+	fDMD.visible = 0 : pupDMD.visible = 0
+	VRBGSpeaker.visible = 0
 End If
 
 If CabinetMode=1 then
@@ -20982,8 +19836,8 @@ End Sub
 
 'reposition dmd for VR
 if VRRoom <> 0 then
-	dmd.y = 10
-	dmd.height = 647
+	fdmd.y = 10
+	fdmd.height = 647
 end if
 
 
@@ -21025,12 +19879,14 @@ sub showQRPairImage
 		vpmtimer.addtimer 3000, "revealQR '"
 	Else
 		if not bQRPairloaded then
-'			debug.print "too early?"
+			'msgbox "too early?"
 			vpmtimer.addtimer 200, "showQRPairImage '"
 		Else
-			debug.print "Paired already, preload claim immediately"
-			preloadQRClaim
-'			vpmtimer.addtimer 3000, "preloadQRClaim '"
+			if Not preloadClaimStarted then
+'msgbox "Paired already, preload claim immediately"
+				preloadQRClaim
+	'			vpmtimer.addtimer 3000, "preloadQRClaim '"
+			end if
 			Introover=True	'enable game to start
 		end if
 	end if
@@ -21040,6 +19896,7 @@ end sub
 
 sub preloadQRClaim
 	preloadClaimStarted = True
+'	if preloadClaimStarted then exit sub
 	Dim sImageName, fso
 	sImageName = TablesDir & "\BMQR\QRclaim.png"
 
@@ -21048,12 +19905,12 @@ sub preloadQRClaim
 	If fso.FileExists(sImageName) then
 		dim oWS2, oExec2
 		set oWS2 = createobject("wscript.shell")
-
+'msgbox "claim image"
 		oExec2 = oWS2.Run("""" & TablesDir & "\QRView.exe"" -i """ & sImageName & """",4,false) 
 
 		FScorbitQRclaim.timerenabled = true
 	Else
-'		debug.print "too early claim image?"
+'msgbox "too early claim image?"
 		vpmtimer.addtimer 1000, "preloadQRClaim '"
 	end if
 	Introover=True	'enable game to start
@@ -21063,8 +19920,7 @@ sub hideQR
 	QRfadeCase = 0
 	FScorbitQRIcon.timerenabled = true
 '	debug.print "preload claim2"
-'	vpmtimer.addtimer 1000, "preloadQRClaim '"
-'	preloadQRClaim
+
 end sub
 
 
@@ -21129,7 +19985,8 @@ sub FScorbitQRIcon_timer	'used to fade the qr code in
 		FScorbitQRIcon.timerenabled = false
 
 		if QRfadeCase = 0 and Not preloadClaimStarted then 
-			debug.print "claim load after pairing? Delay it a bit as new claim image may be in the works"
+'			msgbox "claim load after pairing? Delay it a bit as new claim image may be in the works"
+			preloadClaimStarted = true
 			vpmtimer.addtimer 3000, "preloadQRClaim '"	'make it here as otherwise it can break the fading..
 		end if
 
@@ -21217,10 +20074,10 @@ Sub Scorbit_PlayerClaimed(PlayerNum, PlayerName)	' Scorbit callback when QR Is C
 'debug.print "Scorbit LOGIN: " & PlayerNum & " - " & PlayerName
 	PlaySound "scorbit_login",0,CalloutVol,0,0,1,1,1
 	ScorbitClaimQR(False)
-'	puPlayer.LabelSet pDMDText,"Player",	PlayerName	,1,""
-'	Debug.print "Scorbit_PlayerClaimed:" & PlayerNum & " " & PlayerName
-'sub DMD_ShowText ( txt , nr , font , posy , blinking , blinkdelay , timer )
-
+	Scorepop.enabled=True
+	Scorepop.interval=3000
+	puPlayer.LabelSet pDMD,"Scorlogo","Gif\\sbt.gif",1,"{'mt':2,'color':111111, 'width': 35, 'height': 30., 'anigif': 130 ,}"
+	puPlayer.LabelSet pDMD,"Player","" & PlayerName ,1,"{'mt':2, 'shadowcolor':10646039, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }"
 	'PUPtodo
 	ShowBallCount False
 	DMD_ShowText PlayerName & " claimed player " & PlayerNum,4,FontScoreInactiv1,30,True,40,2500
@@ -21422,7 +20279,7 @@ Class ScorbitIF
 
 		bProduction=1
 '		bProduction=0
-		SaveCurrentPlayer=1
+		SaveCurrentPlayer=0
 		VenueMachineID=""
 		bWaitResp=False 
 		bRunAsynch=False 
@@ -21517,6 +20374,8 @@ Class ScorbitIF
 		End if 
 	End Function 
 
+
+
 	Sub Callback()
 		Dim ResponseStr
 		Dim i 
@@ -21529,55 +20388,48 @@ Class ScorbitIF
 '			Debug.print "CALLBACK: " & objXmlHttpMain.Status & " " & objXmlHttpMain.readystate
 			if objXmlHttpMain.Status=200 and objXmlHttpMain.readystate = 4 then 
 				ResponseStr=objXmlHttpMain.responseText
-'				debug.print "The RESPONSE: " & ResponseStr
-'
+'				Debug.print "RESPONSE: " & ResponseStr
+
 				' Parse Name 
-				if CachedPlayerNames(SaveCurrentPlayer)="" then  ' Player doesnt have a name
+				if CachedPlayerNames(SaveCurrentPlayer-1)="" then  ' Player doesnt have a name
 					if instr(1, ResponseStr, "cached_display_name") <> 0 Then	' There are names in the result
 						Parts=Split(ResponseStr,",{")							' split it 
-'						debug.print ubound(Parts) + 1 & " <> " & SaveCurrentPlayer & " part 0: " & Parts(0)
-						if ubound(Parts)+1 >= SaveCurrentPlayer then 				' Make sure they are enough avail
-							debug.print "ubound check ok"
+						if ubound(Parts)>=SaveCurrentPlayer-1 then 				' Make sure they are enough avail
 							if instr(1, Parts(SaveCurrentPlayer-1), "cached_display_name")<>0 then 	' See if mine has a name 
-								CachedPlayerNames(SaveCurrentPlayer)=GetJSONValue(Parts(SaveCurrentPlayer-1), "cached_display_name")		' Get my name
-								CachedPlayerNames(SaveCurrentPlayer)=Replace(CachedPlayerNames(SaveCurrentPlayer), """", "")
-								Scorbit_PlayerClaimed SaveCurrentPlayer, CachedPlayerNames(SaveCurrentPlayer)
-								Debug.print "Player Claim:" & SaveCurrentPlayer & " " & CachedPlayerNames(SaveCurrentPlayer)
-							Else
-'								debug.print "sadfsadf"
+								CachedPlayerNames(SaveCurrentPlayer-1)=GetJSONValue(Parts(SaveCurrentPlayer-1), "cached_display_name")		' Get my name
+								CachedPlayerNames(SaveCurrentPlayer-1)=Replace(CachedPlayerNames(SaveCurrentPlayer-1), """", "")
+								Scorbit_PlayerClaimed SaveCurrentPlayer, CachedPlayerNames(SaveCurrentPlayer-1)
+'								Debug.print "Player Claim:" & SaveCurrentPlayer & " " & CachedPlayerNames(SaveCurrentPlayer-1)
 							End if 
-						Else
-'							debug.print "FAIL ubound check"
 						End if
-					Else
-'						debug.print "FAIL cached display name check"
 					End if 
-				Else
-'					debug.print "cached name: " & CachedPlayerNames(SaveCurrentPlayer)											    ' Check for unclaim 
+				else												    ' Check for unclaim 
 					if instr(1, ResponseStr, """player"":null")<>0 Then	' Someone doesnt have a name
 						Parts=Split(ResponseStr,"[")						' split it 
-'						Debug.print "Parts:" & Parts(1)
+'Debug.print "Parts:" & Parts(1)
 						Parts2=Split(Parts(1),"}")							' split it 
-						for i = 1 to Ubound(Parts2)
-'							Debug.print "Parts2:" & Parts2(i)
+						for i = 0 to Ubound(Parts2)
+'Debug.print "Parts2:" & Parts2(i)
 							if instr(1, Parts2(i), """player"":null")<>0 Then
-								CachedPlayerNames(i-1)=""
+								CachedPlayerNames(i)=""
 							End if 
 						Next 
 					End if 
 				End if
 			End if 
-			bWaitResp=False 
+			bWaitResp=False
 		End if 
 	End Sub
+
+
 
 	Public Sub StartSession()
 		if bEnabled=False then Exit Sub 
 'msgbox  "Scorbit Start Session" 
+		CachedPlayerNames(0)=""
 		CachedPlayerNames(1)=""
 		CachedPlayerNames(2)=""
 		CachedPlayerNames(3)=""
-		CachedPlayerNames(4)=""
 		bRunAsynch=True 
 		bActive="true"
 		bSessionActive=True
@@ -21974,6 +20826,7 @@ End Class
 '  END SCORBIT 
 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
+
 ''QRView support by iaakki
 
 Function GetTablesFolder()
@@ -21983,9 +20836,10 @@ Function GetTablesFolder()
     set GTF = nothing 
 End Function
 
-ScorbitExesCheck
+
 
 if Scorbitactive = 1 then 
+	ScorbitExesCheck
 '	msgbox "doinit"
 '	if Scorbit.DoInit(2082, "PupOverlays", myVersion, "GRWvz-MP37P") then 	' Staging
 	if Scorbit.DoInit(2115, "BMQR", myVersion, "ESDis-GREAT") then 	' Prod
@@ -22530,7 +21384,7 @@ Const pCallouts=6
 Const pBackglass2=7
 Const pTopper2=8
 Const pPopUP=9
-Const pPopUP2=10
+Const pPopUP2=11
 
 
 'pages
@@ -22550,7 +21404,6 @@ Const pDMDTypeFULL=2
 
 
 
-
 Dim PuPlayer
 dim PUPDMDObject  'for realtime mirroring.
 Dim pDMDlastchk: pDMDLastchk= -1    'performance of updates
@@ -22559,16 +21412,16 @@ Dim pInAttract : pInAttract=false   'pAttract mode
 
 
 
-
 '*************  starts PUP system,  must be called AFTER b2s/controller running so put in last line of table1_init
 Sub PuPInit
-If HasPuP=False then exit Sub
+
 Set PuPlayer = CreateObject("PinUpPlayer.PinDisplay")   
 PuPlayer.B2SInit "", pGameName
 
 if (PuPDMDDriverType=pDMDTypeReal) and (useRealDMDScale=1) Then 
        PuPlayer.setScreenEx pDMD,0,0,128,32,0  'if hardware set the dmd to 128,32
 End if
+
 
 PuPlayer.LabelInit pDMD
 
@@ -22587,8 +21440,6 @@ pSetPageLayouts
 
 pDMDSetPage(pDMDBlank)   'set blank text overlay page.
 pDMDStartUP				 ' firsttime running for like an startup video..
-
-
 End Sub 'end PUPINIT
 
 
@@ -22929,6 +21780,7 @@ DIM dmddef
 DIM dmdalt
 DIM dmdscr
 DIM dmdfixed
+DIM	pDMD_FontScale
 
 'labelNew <screen#>, <Labelname>, <fontName>,<size%>,<colour>,<rotation>,<xalign>,<yalign>,<xpos>,<ypos>,<PageNum>,<visible>
 '***********************************************************************'
@@ -22953,49 +21805,61 @@ if PuPDMDDriverType=pDMDTypeFULL THEN  'Using FULL BIG LCD PuPDMD  ************ 
     dmdfixed="Rogue Hero"
 	dmdscr="Rogue Hero"  'main score font
 	dmddef="Compacta Black"
+	pDMD_FontScale=1
 
 	'Page 1 (default score display)
-		PuPlayer.LabelNew pDMD,"Play1"   ,dmdscr,6,16777215  ,0,1,1,14,87,1,0
-		PuPlayer.LabelNew pDMD,"Ball"    ,dmdscr,5,16777215  ,0,1,1,89,5,1,0
-		PuPlayer.LabelNew pDMD,"MsgScore",dmddef,45,33023   ,0,1,0, 0,40,1,0
-		PuPlayer.LabelNew pDMD,"CurScore1",dmdscr,7, 65535 ,0,1,1, 17,93,1,0
-		PuPlayer.LabelNew pDMD,"CurScore2",dmdscr,7, 65535 ,0,1,1, 39,93,1,0
-		PuPlayer.LabelNew pDMD,"CurScore3",dmdscr,7, 65535 ,0,1,1, 61,93,1,0
-		PuPlayer.LabelNew pDMD,"CurScore4",dmdscr,7, 65535 ,0,1,1, 83,93,1,0
-		PuPlayer.LabelNew pDMD,"Smallscore1",dmdscr,4, 11842740 ,0,1,1, 12,90,1,0
-		PuPlayer.LabelNew pDMD,"Smallscore2",dmdscr,4, 11842740 ,0,1,1, 44,90,1,0
-		PuPlayer.LabelNew pDMD,"Smallscore2l",dmdscr,4, 11842740 ,0,1,1, 34,90,1,0
-		PuPlayer.LabelNew pDMD,"Smallscore3",dmdscr,4, 11842740 ,0,1,1, 66,90,1,0
-		PuPlayer.LabelNew pDMD,"Smallscore3l",dmdscr,4, 11842740 ,0,1,1, 56,90,1,0
-		PuPlayer.LabelNew pDMD,"Smallscore4",dmdscr,4, 11842740 ,0,1,1, 88,90,1,0
-		PuPlayer.LabelNew pDMD,"Credits",dmdscr,5, 16777215 ,0,1,1, 11,5,1,0	
-		PuPlayer.LabelNew pDMD,"M1",dmdscr,10, 263340 ,0,1,1,86,22,1,0
-		PuPlayer.LabelNew pDMD,"M1P",dmddef,10,  263340,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M1PC",dmddef,10, 16753873 ,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M2",dmdscr,10, 263340,0,1,1,18,35,1,0
-		PuPlayer.LabelNew pDMD,"M2P",dmddef,10,  263340,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M2PC",dmddef,10, 16753873,0,1,1, 50,67,1,1	
-		PuPlayer.LabelNew pDMD,"M3",dmdscr,10, 263340 ,0,1,1,86,44,1,0
-		PuPlayer.LabelNew pDMD,"M3P",dmddef,10,  263340,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M3PC",dmddef,10, 16753873,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M4",dmdscr,10, 263340 ,0,1,1,63,28,1,0
-		PuPlayer.LabelNew pDMD,"M4P1",dmddef,10,  263340,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M4P2",dmddef,10,  263340,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M4PC",dmddef,10, 16753873,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M5P",dmddef,10,  16777215,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M5PC",dmddef,10, 16753873,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M6",dmdscr,9, 263340,0,1,1,18,37,1,0
-		PuPlayer.LabelNew pDMD,"M6P",dmddef,10,  263340,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M6PC",dmddef,10, 16753873,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M7P",dmddef,10,  263340,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"M7PC",dmddef,10, 16753873,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"PS1",dmddef,10, 263340 ,0,1,1, 50,67,1,1	
-		PuPlayer.LabelNew pDMD,"PS2",dmddef,10, 263340 ,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"PS2B",dmddef,10, 263340 ,0,1,1, 50,17,1,1
-		PuPlayer.LabelNew pDMD,"PS3",dmddef,10, 263340 ,0,1,1, 50,67,1,1	
-		PuPlayer.LabelNew pDMD,"PS4",dmddef,10, 263340 ,0,1,1, 50,67,1,1
-		PuPlayer.LabelNew pDMD,"GS",dmddef,10, 263340 ,0,1,1, 50,17,1,1
-
+		PuPlayer.LabelNew pDMD,"Play1"   ,dmdscr,(6*pDMD_FontScale),16777215  ,0,1,1,14,87,1,0
+		PuPlayer.LabelNew pDMD,"Ball"    ,dmdscr,(5*pDMD_FontScale),16777215  ,0,1,1,89,5,1,0
+		PuPlayer.LabelNew pDMD,"MsgScore",dmddef,(45*pDMD_FontScale),33023   ,0,1,0, 0,40,1,0
+		PuPlayer.LabelNew pDMD,"CurScore1",dmdscr,(7*pDMD_FontScale), 65535 ,0,1,1, 17,93,1,0
+		PuPlayer.LabelNew pDMD,"CurScore2",dmdscr,(7*pDMD_FontScale), 65535 ,0,1,1, 39,93,1,0
+		PuPlayer.LabelNew pDMD,"CurScore3",dmdscr,(7*pDMD_FontScale), 65535 ,0,1,1, 61,93,1,0
+		PuPlayer.LabelNew pDMD,"CurScore4",dmdscr,(7*pDMD_FontScale), 65535 ,0,1,1, 83,93,1,0
+		PuPlayer.LabelNew pDMD,"Smallscore1",dmdscr,(4*pDMD_FontScale), 11842740 ,0,1,1, 12,90,1,0
+		PuPlayer.LabelNew pDMD,"Smallscore2",dmdscr,(4*pDMD_FontScale), 11842740 ,0,1,1, 44,90,1,0
+		PuPlayer.LabelNew pDMD,"Smallscore2l",dmdscr,(4*pDMD_FontScale), 11842740 ,0,1,1, 34,90,1,0
+		PuPlayer.LabelNew pDMD,"Smallscore3",dmdscr,(4*pDMD_FontScale), 11842740 ,0,1,1, 66,90,1,0
+		PuPlayer.LabelNew pDMD,"Smallscore3l",dmdscr,(4*pDMD_FontScale), 11842740 ,0,1,1, 56,90,1,0
+		PuPlayer.LabelNew pDMD,"Smallscore4",dmdscr,(4*pDMD_FontScale), 11842740 ,0,1,1, 88,90,1,0
+		PuPlayer.LabelNew pDMD,"Credits",dmdscr,(5*pDMD_FontScale), 16777215 ,0,1,1, 11,5,1,0	
+		PuPlayer.LabelNew pDMD,"M1",dmdscr,(10*pDMD_FontScale), 263340 ,0,1,1,86,22,1,0
+		PuPlayer.LabelNew pDMD,"M1P",dmddef,(10*pDMD_FontScale),  263340,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M1PC",dmddef,(10*pDMD_FontScale), 16753873 ,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M2",dmdscr,(10*pDMD_FontScale), 263340,0,1,1,18,35,1,0
+		PuPlayer.LabelNew pDMD,"M2P",dmddef,(10*pDMD_FontScale),  263340,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M2PC",dmddef,(10*pDMD_FontScale), 16753873,0,1,1, 50,67,1,1	
+		PuPlayer.LabelNew pDMD,"M3",dmdscr,(10*pDMD_FontScale), 263340 ,0,1,1,86,44,1,0
+		PuPlayer.LabelNew pDMD,"M3P",dmddef,(10*pDMD_FontScale),  263340,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M3PC",dmddef,(10*pDMD_FontScale), 16753873,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M4",dmdscr,(10*pDMD_FontScale), 263340 ,0,1,1,63,28,1,0
+		PuPlayer.LabelNew pDMD,"M4P1",dmddef,(10*pDMD_FontScale),  263340,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M4P2",dmddef,(10*pDMD_FontScale),  263340,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M4PC",dmddef,(10*pDMD_FontScale), 16753873,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M5P",dmddef,(10*pDMD_FontScale),  16777215,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M5PC",dmddef,(10*pDMD_FontScale), 16753873,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M6",dmdscr,(9*pDMD_FontScale), 263340,0,1,1,18,37,1,0
+		PuPlayer.LabelNew pDMD,"M6P",dmddef,(10*pDMD_FontScale),  263340,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M6PC",dmddef,(10*pDMD_FontScale), 16753873,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M7P",dmddef,(10*pDMD_FontScale),  263340,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"M7PC",dmddef,(10*pDMD_FontScale), 16753873,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"PS1",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,67,1,1	
+		PuPlayer.LabelNew pDMD,"PS2",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"PS2B",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,17,1,1
+		PuPlayer.LabelNew pDMD,"PS3",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,67,1,1	
+		PuPlayer.LabelNew pDMD,"PS4",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"PS5",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,70,1,1
+		PuPlayer.LabelNew pDMD,"PS6",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,70,1,1	
+		PuPlayer.LabelNew pDMD,"PS7",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,70,1,1
+		PuPlayer.LabelNew pDMD,"PS8",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,70,1,1
+		PuPlayer.LabelNew pDMD,"PS9",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,70,1,1	
+		PuPlayer.LabelNew pDMD,"PS10",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,70,1,1
+		PuPlayer.LabelNew pDMD,"PS11",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,70,1,1
+		PuPlayer.LabelNew pDMD,"PS12",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,70,1,1	
+		PuPlayer.LabelNew pDMD,"PS9B",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,17,1,1
+		PuPlayer.LabelNew pDMD,"GS",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,17,1,1
+		PuPlayer.LabelNew pDMD,"Player",dmddef,(10*pDMD_FontScale), 16777215 ,0,1,1, 50,67,1,1
+		PuPlayer.LabelNew pDMD,"Scorlogo",dmddef,(10*pDMD_FontScale), 263340 ,0,1,1, 50,53,1,1
+		PuPlayer.LabelNew pDMD,"Mcountdown" ,dmdscr,(5*pDMD_FontScale), 59624 ,0,1,1,83,76,1,1
 
 
 	'Page 2 (default Text Splash 1 Big Line)
@@ -23022,41 +21886,41 @@ if PuPDMDDriverType=pDMDTypeFULL THEN  'Using FULL BIG LCD PuPDMD  ************ 
 		PuPlayer.LabelNew pDMD,"Splash6c",dmddef,40,33023,0,1,0,60,50,6,0
 
 	'Page 7 (Show High Scores Fixed Fonts)
-		PuPlayer.LabelNew pDMD,"Attract 1 Score",dmddef,20,8454143,0,1,0,0,2,7,0
-		PuPlayer.LabelNew pDMD,"Splash7b",dmdfixed,40,33023,0,1,0,0,20,7,0
-		PuPlayer.LabelNew pDMD,"Splash7c",dmdfixed,40,33023,0,1,0,0,50,7,0
+		PuPlayer.LabelNew pDMD,"Attract 1 Score",dmddef,(20*pDMD_FontScale),8454143,0,1,0,0,2,7,0
+		PuPlayer.LabelNew pDMD,"Splash7b",dmdfixed,(40*pDMD_FontScale),33023,0,1,0,0,20,7,0
+		PuPlayer.LabelNew pDMD,"Splash7c",dmdfixed,(40*pDMD_FontScale),33023,0,1,0,0,50,7,0
 
 	'Page 8 (Sequence Text 3 Lines)
-		PuPlayer.LabelNew pDMD,"Bonus",dmddef,20,16777215,0,1,1, 50,30,8,0
-		PuPlayer.LabelNew pDMD,"Btotal",dmddef,20,16777215,0,1,1, 50,60,8,0
-		PuPlayer.LabelNew pDMD,"Total",dmddef,20,16777215,0,1,1, 50,30,8,0
+		PuPlayer.LabelNew pDMD,"Bonus",dmddef,(20*pDMD_FontScale),16777215,0,1,1, 50,30,8,0
+		PuPlayer.LabelNew pDMD,"Btotal",dmddef,(20*pDMD_FontScale),16777215,0,1,1, 50,60,8,0
+		PuPlayer.LabelNew pDMD,"Total",dmddef,(20*pDMD_FontScale),16777215,0,1,1, 50,30,8,0
 
 	'Page 9 (Attract Text 3 Lines)
-		PuPlayer.LabelNew pDMD,"AttractA",dmdalt,10, 16777215 ,0,1,1, 45,50,9,0
-		PuPlayer.LabelNew pDMD,"Player1",dmddef,15,183,0,1,1,50,30,9,0
-		PuPlayer.LabelNew pDMD,"HSNUMB",dmddef,10,1769471,0,1,1,60,30,9,0
-		PuPlayer.LabelNew pDMD,"GRANDCHAMP",dmddef,10,1769471,0,1,1,60,20,9,0
-		PuPlayer.LabelNew pDMD,"HSINIT",dmddef,15,1769471,0,1,1,60,50,9,0
-		PuPlayer.LabelNew pDMD,"CreditsATT",dmdscr,6, 16777215 ,0,1,1,90,96,9,0	
-		PuPlayer.LabelNew pDMD,"BonusDrain",dmdscr,15, 16777215 ,0,1,1,50,30,9,0
-		PuPlayer.LabelNew pDMD,"BonusMissions",dmdscr,15, 16777215 ,0,1,1,50,50,9,0
-		PuPlayer.LabelNew pDMD,"BonusMissions1",dmdscr,15, 16777215 ,0,1,1,50,70,9,0
-		PuPlayer.LabelNew pDMD,"Ramptotal",dmdscr,15, 16777215 ,0,1,1,50,58,9,0
-		PuPlayer.LabelNew pDMD,"Ramps1",dmdscr,15, 16777215 ,0,1,1,50,78,9,0
-		PuPlayer.LabelNew pDMD,"ScoreTotal",dmdscr,15, 16777215 ,0,1,1,50,50,9,0
-		PuPlayer.LabelNew pDMD,"MimaLoop3",dmdscr,15, 16777215 ,0,1,1,50,55,9,0
-		PuPlayer.LabelNew pDMD,"MimaLoopTotal",dmdscr,15, 16777215 ,0,1,1,50,75,9,0
-		PuPlayer.LabelNew pDMD,"BonusDrainTotal",dmdscr,15, 16777215 ,0,1,1,50,60,9,0
-		PuPlayer.LabelNew pDMD,"Multi",dmdscr,25, 16777215 ,0,1,1,50,55,9,0
-		PuPlayer.LabelNew pDMD,"Bonus Multiplier",dmdscr,25, 16777215 ,0,1,1,50,55,9,0
-		PuPlayer.LabelNew pDMD,"Bonus Multiplier Total",dmdscr,15, 16777215 ,0,1,1,50,50,9,0
-		PuPlayer.LabelNew pDMD,"Credits2",dmdscr,6, 16777215 ,0,1,1, 49,5,9,0	
-		PuPlayer.LabelNew pDMD,"GameOver",dmdscr,10, 16777215 ,0,1,1, 50,87,9,0
-		PuPlayer.LabelNew pDMD,"Error1"   ,dmdscr,6,459262 ,0,1,1,51,87,9,0	
-		PuPlayer.LabelNew pDMD,"InsertCoin1",dmdscr,6, 459262 ,0,1,1,86,87,9,0
-		PuPlayer.LabelNew pDMD,"HIGHSCORE1P",dmdscr,10, 16777215 ,0,1,1,50,55,9,0
-		PuPlayer.LabelNew pDMD,"HIGHSCORE2P",dmdscr,10, 16777215 ,0,1,1,50,75,9,0
-		PuPlayer.LabelNew pDMD,"HSSCORE",dmdscr,20, 65021 ,0,1,1,50,30,9,0
+		PuPlayer.LabelNew pDMD,"AttractA",dmdalt,(18*pDMD_FontScale), 16777215 ,0,1,1,50,50,9,0
+		PuPlayer.LabelNew pDMD,"Player1",dmddef,(15*pDMD_FontScale),183,0,1,1,50,35,9,0
+		PuPlayer.LabelNew pDMD,"HSNUMB",dmddef,(15*pDMD_FontScale),16777215,0,1,1,50,45,9,0
+		PuPlayer.LabelNew pDMD,"GRANDCHAMP",dmddef,(15*pDMD_FontScale),16777215,0,1,1,50,30,9,0
+		PuPlayer.LabelNew pDMD,"HSINIT",dmddef,(20*pDMD_FontScale),16777215,0,1,1,50,62,9,0
+		PuPlayer.LabelNew pDMD,"CreditsATT",dmdscr,(6*pDMD_FontScale), 16777215 ,0,1,1,90,96,9,0	
+		PuPlayer.LabelNew pDMD,"BonusDrain",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,30,9,0
+		PuPlayer.LabelNew pDMD,"BonusMissions",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,50,9,0
+		PuPlayer.LabelNew pDMD,"BonusMissions1",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,70,9,0
+		PuPlayer.LabelNew pDMD,"Ramptotal",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,58,9,0
+		PuPlayer.LabelNew pDMD,"Ramps1",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,78,9,0
+		PuPlayer.LabelNew pDMD,"ScoreTotal",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,50,9,0
+		PuPlayer.LabelNew pDMD,"MimaLoop3",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,55,9,0
+		PuPlayer.LabelNew pDMD,"MimaLoopTotal",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,75,9,0
+		PuPlayer.LabelNew pDMD,"BonusDrainTotal",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,60,9,0
+		PuPlayer.LabelNew pDMD,"Multi",dmdscr,(25*pDMD_FontScale), 16777215 ,0,1,1,50,55,9,0
+		PuPlayer.LabelNew pDMD,"Bonus Multiplier",dmdscr,(25*pDMD_FontScale), 16777215 ,0,1,1,50,55,9,0
+		PuPlayer.LabelNew pDMD,"Bonus Multiplier Total",dmdscr,(15*pDMD_FontScale), 16777215 ,0,1,1,50,50,9,0
+		PuPlayer.LabelNew pDMD,"Credits2",dmdscr,(6*pDMD_FontScale), 16777215 ,0,1,1, 49,5,9,0	
+		PuPlayer.LabelNew pDMD,"GameOver",dmdscr,(10*pDMD_FontScale), 16777215 ,0,1,1, 50,87,9,0
+		PuPlayer.LabelNew pDMD,"Error1"   ,dmdscr,(6*pDMD_FontScale),459262 ,0,1,1,51,87,9,0	
+		PuPlayer.LabelNew pDMD,"InsertCoin1",dmdscr,(6*pDMD_FontScale), 459262 ,0,1,1,86,87,9,0
+		PuPlayer.LabelNew pDMD,"HIGHSCORE1P",dmdscr,(10*pDMD_FontScale), 16777215 ,0,1,1,50,55,9,0
+		PuPlayer.LabelNew pDMD,"HIGHSCORE2P",dmdscr,(10*pDMD_FontScale), 16777215 ,0,1,1,50,75,9,0
+		PuPlayer.LabelNew pDMD,"HSSCORE",dmdscr,(20*pDMD_FontScale), 65021 ,0,1,1,50,30,9,0
 
 
 
@@ -23092,14 +21956,13 @@ If HasPuP=False then exit Sub
 	pDMD_CurSequencePos=0
 	pDMD_Sequence.Enabled=false
     PuPEvent(500)
-	Dof 500, DOFPulse
+	Dof 518, DOFOff
 end Sub
 
 
 Sub pDMDGameOver
 If HasPuP=False then exit Sub
 	pDMDSetPage(9)
-	pDMDmode="go"
 	pDMD_CurSequencePos=0
 	pDMD_Sequence.Interval = 500
 	pDMD_Sequence.Enabled=true
@@ -23116,9 +21979,9 @@ end Sub
 
 Sub pDMDStartUP
 If HasPuP=False then exit Sub
-	pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
-	puPlayer.LabelSet pDMD,"GameOver","Game Over" ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
-	pDMDSetPage(9)
+	'pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
+	'puPlayer.LabelSet pDMD,"GameOver","Game Over" ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
+	'pDMDSetPage(9)
 	pDMDmode="attract"
 	pDMD_CurSequencePos=0
 	pDMD_Sequence.Interval = 50
@@ -23134,51 +21997,111 @@ Dim pDMD_CurSequencePos:pDMD_CurSequencePos=0
 Dim pDMDmode: pDMDmode="default"
 
 Sub pDMD_Sequence_Timer
-If HasPuP=False then exit Sub
+If HasPuP=False then exit Sub	
+	PuPlayer.playlistplayex pMusic2,"PuPOverlays","pupdmd.png",100,1
 	pDMDSetPage(9):puPlayer.LabelSet pDMD,"Credits2"," Credits: " & Credits,1,""
-	puPlayer.LabelSet pDMD,"GameOver","Game Over" ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"	
+	pDMDSetPage(9):puPlayer.LabelSet pDMD,"GameOver","Game Over" ,1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	pDMD_CurSequencePos=pDMD_CurSequencePos+1
 	if pDMDmode="attract" then
 		Select Case pDMD_CurSequencePos
-		Case 1 PuPEvent(518):pDMD_Sequence.Interval = 35000
-		Case 2 PuPEvent(405) :pDMD_Sequence.Interval = 500
-		Case 3 pDMDSetPage(9):puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 1",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
-		Case 4 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 2",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
-		Case 5 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 3",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
-		Case 6 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(4)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
-	    Case 7 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(4)),0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",0,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 20
-		Case 8 PuPEvent(406):pDMD_Sequence.Interval = 3000
-		Case 9 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
-		Case 10 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
-		Case 11 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
-		Case 12 pDMDSetPage(0):pDMD_Sequence.Interval =1 
+		Case 1 pDMD_Sequence.Interval =2 
+		DOF 518, DOFOn
+		Case 2 pDMD_Sequence.Interval = 27000
+		Case 3 PuPEvent(406):pDMD_Sequence.Interval = 1000
+		Case 4 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 5 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 6 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 7 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval =1000
 
 		Case Else
+		PuPEvent(518)
 		pDMDSetPage(9)
 		pDMD_CurSequencePos=0
 		end Select
 	end if
-	 if pDMDmode="go" then
+	 if pDMDmode="go1" then
 		Select Case pDMD_CurSequencePos
 		Case 1 PuPEvent(405) :pDMD_Sequence.Interval = 500
-		Case 2 pDMDSetPage(9):puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 1",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
-		Case 3 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 2",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
-		Case 4 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 3",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
-		Case 5 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(4)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
-		Case 6 puPlayer.LabelSet pDMD,"AttractA","       "& FormatScore(Score(4)),0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",0,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 20
-		Case 7 PuPEvent(406):pDMD_Sequence.Interval = 3000
-		Case 8 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
-		Case 9 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
-		Case 10 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':58880, 'shadowstate':2,'xoffset':1, 'yoffset':2, 'bold':1, 'outline':2 }"
-		Case 11 pDMDSetPage(0):pDMD_Sequence.Interval =1 
+		Case 2 pDMDSetPage(9):puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 1",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 3 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(1)),0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",0,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 20
+		Case 4 PuPEvent(406):pDMD_Sequence.Interval = 1000
+		Case 5 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 6 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 7 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 8 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval =1000
+		Case 9 PuPEvent (777):pDMD_Sequence.Interval = 34000
+		Case 10 pDMD_Sequence.Interval = 1
+		Case Else
+		pDMDSetPage(9)
+		pDMD_CurSequencePos=0
+		end Select
+	end if
+
+	 if pDMDmode="go2" then	
+		Select Case pDMD_CurSequencePos
+		Case 1 PuPEvent(405) :pDMD_Sequence.Interval = 500
+		Case 2 pDMDSetPage(9):puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 1",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 3 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 2",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
+		Case 4 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(2)),0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",0,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 20		
+		Case 5 PuPEvent(406):pDMD_Sequence.Interval = 1000
+		Case 6 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 7 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 8 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 9 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval =1000
+		Case 10 PuPEvent (777):pDMD_Sequence.Interval = 34000
+		Case 11 pDMD_Sequence.Interval = 1
 
 		Case Else
 		pDMDSetPage(9)
 		pDMD_CurSequencePos=0
 		end Select
 	end if
-End Sub
 
+	 if pDMDmode="go3" then
+		Select Case pDMD_CurSequencePos
+		Case 1 PuPEvent(405) :pDMD_Sequence.Interval = 500
+		Case 2 pDMDSetPage(9):puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 1",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 3 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 2",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
+		Case 4 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 3",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"	
+		Case 5 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(3)),0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",0,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 20		
+		Case 6 PuPEvent(406):pDMD_Sequence.Interval = 1000
+		Case 7 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 8 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 9 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 10 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval =1000
+		Case 11 PuPEvent (777):pDMD_Sequence.Interval = 34000
+		Case 12 pDMD_Sequence.Interval = 1
+
+		Case Else
+		pDMDSetPage(9)
+		pDMD_CurSequencePos=0
+		end Select
+	end if
+
+	 if pDMDmode="go4" then
+		Select Case pDMD_CurSequencePos
+		Case 1 PuPEvent(405) :pDMD_Sequence.Interval = 500
+		Case 2 pDMDSetPage(9):puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(1)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 1",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 3 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(2)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 2",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
+		Case 4 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(3)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 3",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"	
+		Case 5 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(4)),1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",1,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }"
+		Case 6 puPlayer.LabelSet pDMD,"AttractA",""& FormatScore(Score(4)),0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':1,'xoffset':2, 'yoffset':6, 'bold':1, 'outline':2 }":puPlayer.LabelSet pDMD,"Player1","PLAYER 4",0,"{'mt':2, 'shadowcolor':7929917, 'shadowstate':1,'xoffset':2, 'yoffset':4, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 20
+		Case 7 PuPEvent(406):pDMD_Sequence.Interval = 1000
+		Case 8 pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(0)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","GRAND CHAMPION",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(0),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 9 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(1)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 1",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(1),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 10 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),1,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval = 3000
+		Case 11 puPlayer.LabelSet pDMD,"HSNUMB",""& FormatScore(HighScore(2)),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"GRANDCHAMP","HIGH SCORE: 2",0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMDSetPage(9):puPlayer.LabelSet pDMD,"HSINIT",""& HighScoreName(2),0,"{'mt':2,'shadowcolor':1184274, 'shadowstate':2,'xoffset':2, 'yoffset':3, 'bold':1, 'outline':2 }":pDMD_Sequence.Interval =1000
+		Case 12 PuPEvent (777):pDMD_Sequence.Interval = 34000
+		Case 13 pDMD_Sequence.Interval = 1
+
+		Case Else
+		pDMDSetPage(9)
+		pDMD_CurSequencePos=0
+		end Select
+	end if
+
+
+End Sub
 
 
 
@@ -23195,6 +22118,8 @@ Dim GunshotPUP: GunshotPUP = "Default"
 Dim Gameplayerup: Gameplayerup = "Default"
 Dim GameplayerNotup: GameplayerNotup = "Default"
 Dim Smalldisplayscore:Smalldisplayscore = "Default"
+Dim Bstage:Bstage = "Default"
+Dim Mtimercountdown: Mtimercountdown = "Default"
 
 
 Sub pUpdateScores  'call this ONLY on timer 300ms is good enough
@@ -23393,7 +22318,47 @@ If SkillPupFlash= "3" Then
 End If
 
 If SkillPupFlash= "4" Then
-			puPlayer.Labelset pDMD,"P4","800,000",0,"{'mt':1, 'at':1,'fq':110, 'len':999, 'fc':53760}"
+			puPlayer.Labelset pDMD,"PS4","800,000",0,"{'mt':1, 'at':1,'fq':110, 'len':999, 'fc':53760}"
+
+End If
+
+If SkillPupFlash= "5" Then
+			puPlayer.Labelset pDMD,"PS5","2,000,000",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
+
+End If
+
+If SkillPupFlash= "6" Then
+			puPlayer.Labelset pDMD,"PS6","2,200,000",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
+
+End If
+
+If SkillPupFlash= "7" Then
+			puPlayer.Labelset pDMD,"PS7","2,400,000",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
+
+End If
+
+If SkillPupFlash= "8" Then
+			puPlayer.Labelset pDMD,"PS8","2,600,000",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
+
+End If
+
+If SkillPupFlash= "9" Then
+			puPlayer.Labelset pDMD,"PS9","4,000,000",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
+			puPlayer.Labelset pDMD,"PS9B","EXTRA BALL",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
+End If
+
+If SkillPupFlash= "10" Then
+			puPlayer.Labelset pDMD,"PS10","4,400,000",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
+
+End If
+
+If SkillPupFlash= "11" Then
+			puPlayer.Labelset pDMD,"PS11","4,800,000",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
+
+End If
+
+If SkillPupFlash= "11" Then
+			puPlayer.Labelset pDMD,"PS12","5,200,000",0,"{'mt':1, 'at':1,'fq':80, 'len':999, 'fc':13473944}"
 
 End If
 
@@ -23406,6 +22371,10 @@ If SkillPupFlash= "Default" Then
 End If
 
 If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS2B","",0,""
+End If
+
+If SkillPupFlash= "Default" Then
 			puPlayer.Labelset pDMD,"PS3","",0,""
 End If
 If SkillPupFlash= "Default" Then
@@ -23413,18 +22382,49 @@ If SkillPupFlash= "Default" Then
 End If
 
 If SkillPupFlash= "Default" Then
-			puPlayer.Labelset pDMD,"PS2B","",0,""
+			puPlayer.Labelset pDMD,"PS5","",0,""
 End If
 
-'GunShot
-
-If GunshotPUP = "1" Then
-	puPlayer.Labelset pDMD,"GS","" & FormatNumber (GunTargetScore(CurrentPlayer),0),1,""
+If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS6","",0,""
 End If
 
-If GunshotPUP= "Default" Then
-			puPlayer.Labelset pDMD,"GS","",0,""
+If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS7","",0,""
 End If
+
+If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS8","",0,""
+End If
+
+If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS9","",0,""
+End If
+
+If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS9B","",0,""
+End If
+
+If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS10","",0,""
+End If
+If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS11","",0,""
+End If
+
+If SkillPupFlash= "Default" Then
+			puPlayer.Labelset pDMD,"PS12","",0,""
+End If
+
+
+If Mtimercountdown= "1" Then
+	puPlayer.LabelSet pDMD,"Mcountdown","MISSION TIME: "& ((MissiontimeMax-MissionTimeCurrent)),1,"{'mt':2, 'shadowcolor':66, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
+End If
+
+If Mtimercountdown= "Default"  Then
+	puPlayer.LabelSet pDMD,"Mcountdown","",0,""
+End If
+
 '*************************************************************************
 'Gamescore "Stern Style
 
@@ -23546,6 +22546,20 @@ If HasPuP=False then exit Sub
 End Sub
 
 
+Sub AttractScoreNumbers
+	If PlayersPlayingGame =1 Then
+	pDMDmode="go1"
+	End if
+	If PlayersPlayingGame =2 Then
+	pDMDmode="go2"
+	End if
+	If PlayersPlayingGame =3 Then
+	pDMDmode="go3"
+	End if	
+	If PlayersPlayingGame =4 Then
+	pDMDmode="go4"
+	End if	
+End Sub
 
 
 Sub SmallScores  'checkStartGameKey
@@ -23650,7 +22664,8 @@ End Sub
 
 Sub TracyPupCount
 If HasPuP=False then exit Sub
-	BumperHitsPup(CurrentPlayer)= BumperHitsPup(CurrentPlayer)  + 1
+	BumperHitsPup(CurrentPlayer)= BumperHitsPup(CurrentPlayer) + 1
+	If PupBumperTracy = True Then
 	Select Case BumperHitsPup(CurrentPlayer)
 	Case 1: PuPEvent(617)
 	Case 2:	PuPEvent(618)
@@ -23666,13 +22681,70 @@ If HasPuP=False then exit Sub
 	Case 12: PuPEvent(628)
 	Case 13: PuPEvent(629)
 	Case 14: PuPEvent(630)
-	Case 15: PuPEvent(631)
- Case Else
-	If BumperHitsPup(CurrentPlayer)>=16 Then
-	   PuPEvent(632)
-		DOF 632, DOFPulse
-		End If
- end Select		
+	Case 15: PuPEvent(631):DOF 632, DOFPulse:PupBumpertenthousand=True:BumperStages
+ end Select	
+End if
+End Sub
+
+
+Sub BumperTenthousand
+	If HasPuP=False then exit Sub
+	 BumperThousandPup(CurrentPlayer)= BumperThousandPup(CurrentPlayer) + 1
+	If PupBumpertenthousand= True Then
+	Select Case BumperThousandPup(CurrentPlayer)
+	Case 1: PuPEvent(638)
+	Case 2:	PuPEvent(639)
+	Case 3: PuPEvent(640)
+	Case 4: PuPEvent(641)
+	Case Else
+	BumperThousandPup(CurrentPlayer)=0
+	end Select
+ end if
+End Sub
+
+Sub BumperTwentythousand
+ If HasPuP=False then exit Sub
+	BumperTwentyThousandPup(CurrentPlayer)= BumperTwentyThousandPup(CurrentPlayer) + 1
+	If PupBumpersuperjets = True Then
+	Select Case BumperTwentyThousandPup(CurrentPlayer)
+	Case 1: PuPEvent(634)
+	Case 2:	PuPEvent(635)
+	Case 3: PuPEvent(636)
+	Case 4: PuPEvent(637)
+	Case Else
+	BumperTwentyThousandPup(CurrentPlayer)=0
+	end Select
+ end if
+End Sub
+
+
+
+Sub BumperStages
+	If HasPuP=False then exit Sub
+	BumperscoringPup(CurrentPlayer)= BumperscoringPup(CurrentPlayer) + 1
+	Select Case BumperscoringPup(CurrentPlayer)
+	Case 1:	Bstage= "1" 
+	Case 2:	Bstage= "2"
+ end Select	
+End Sub
+
+Sub Superjetsdrainreset
+ If HasPuP=False then exit Sub
+	If BumperscoringPup(CurrentPlayer)=0 then 
+	PupBumperTracy = True
+	PupBumpertenthousand= False
+	PupBumpersuperjets = False
+	End if
+	If BumperscoringPup(CurrentPlayer)=1 then 
+	PupBumpertenthousand= True
+	PupBumperTracy = False
+	PupBumpersuperjets = False
+	End if
+	If BumperscoringPup(CurrentPlayer)>=2 Then
+	 PupBumpersuperjets = False
+	 PupBumperTracy = False
+	 PupBumpertenthousand= True		
+ End If
 End Sub
 
 'Multiball
@@ -23780,20 +22852,36 @@ Sub CoinErrorText
 		puPlayer.LabelShowPage pDMD,9,1,""
 		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
 	  End if
-		If pDMDmode="go" And Credits=0 Then
+		If pDMDmode="go1" And Credits=0 Then
 		puPlayer.LabelShowPage pDMD,9,1,""
 		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
-
+	end if
+		If pDMDmode="go2" And Credits=0 Then
+		puPlayer.LabelShowPage pDMD,9,1,""
+		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
+	end if
+		If pDMDmode="go3" And Credits=0 Then
+		puPlayer.LabelShowPage pDMD,9,1,""
+		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
+	end if
+		If pDMDmode="go4" And Credits=0 Then
+		puPlayer.LabelShowPage pDMD,9,1,""
+		puPlayer.LabelSet pDMD, "Error1", "Error                                                                  Insert Coin",0,"{'mt':1, 'at':1,'fq':150, 'len':3000, 'fc':459262}"
 	end if
 End Sub
 
+'Time Stop
+
+Sub StopCoutdownPup
+	Mtimercountdown= "Default" 
+End Sub
 
 
 'High Score
 
 Sub PupDMDHSInput
 If HasPuP=False then exit Sub
-	pDMDSetPage(9):puPlayer.LabelSet pDMD, "HIGHSCORE1P", "ENTER NAME:", 1,""
+	pDMDSetPage(9):puPlayer.LabelSet pDMD, "HIGHSCORE1P", "ENTER INITIALS:", 1,""
 	pDMDSetPage(9):puPlayer.LabelSet pDMD,	"HSSCORE","" & FormatNumber(Score(CurrentPlayer),0),1,""
 	If ( Enterblinking mod 50 ) >20 Then
 		If Len(EnterName) = 0 Then pDMDSetPage(9):puPlayer.LabelSet pDMD, "HIGHSCORE2P","<" & mid("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 ",EnterNamePos,1) & ">", 1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
@@ -23807,8 +22895,6 @@ If HasPuP=False then exit Sub
 		If Len(EnterName) = 3 Then pDMDSetPage(9):puPlayer.LabelSet pDMD, "HIGHSCORE2P", "-    -", 1,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
 	End If
 End Sub
-
-
 
 
 
@@ -23844,7 +22930,19 @@ Sub DrainPupvideo_Timer
 If HasPuP=False then exit Sub
 	DrainPupvideo.Enabled=False
 	PuPEvent(501)
+	Mtimercountdown= "Default" 
 	Dof 501, DOFPulse
+	DOF 512, DOFOff
+	DOF 508, DOFOff
+	DOF 509, DOFOff
+	DOF 513, DOFOff
+	DOF 511, DOFOff
+	DOF 510, DOFOff
+	DOF 507, DOFOff
+	DOF 552, DOFOff
+	DOF 554, DOFOff
+	DOF 550, DOFOff
+	
 End Sub
 
 Sub MissionPointsPup_Timer
@@ -23870,23 +22968,27 @@ Sub ModeTextDelay1_Timer
 If HasPuP=False then exit Sub
 	ModeTextDelay1.Enabled=False
 	PupMission= "PMission1"
+	Mtimercountdown= "1"
 End Sub
 
 Sub ModeTextDelay2_Timer
 	ModeTextDelay2.Enabled=False
 	PupMission= "PMission2"
+	Mtimercountdown= "1"
 End Sub
 
 Sub ModeTextDelay3_Timer
 If HasPuP=False then exit Sub
 	ModeTextDelay3.Enabled=False
 	PupMission= "PMission3"
+	Mtimercountdown= "1"
 End Sub
 
 Sub ModeTextDelay4_Timer
 If HasPuP=False then exit Sub
 	ModeTextDelay4.Enabled=False
 	PupMission= "PMission4"
+	Mtimercountdown= "1"
 End Sub
 
 Sub ModeTextDelay4c2_Timer
@@ -23910,6 +23012,13 @@ Sub ModeTextDelay6_Timer
 If HasPuP=False then exit Sub
 	ModeTextDelay6.Enabled=False
 	PupMission= "PMission6"
+	Mtimercountdown= "1"
+End Sub
+
+Sub ModeTextDelay7_Timer
+If HasPuP=False then exit Sub
+	ModeTextDelay7.Enabled=False
+	Mtimercountdown= "1"
 End Sub
 
 Sub SkillShotPup_Timer
@@ -23932,13 +23041,79 @@ End Sub
 
 Sub SkillShotPup4_Timer
 If HasPuP=False then exit Sub
-	SkillShotPup3.Enabled=False
+	SkillShotPup4.Enabled=False
 	SkillPupFlash="Default"
 End Sub
 
-Sub GS_Timer
+Sub SkillShotPup5_Timer
 If HasPuP=False then exit Sub
-	GS.Enabled=False
-	GunshotPUP = "Default"
+	SkillShotPup5.Enabled=False
+	SkillPupFlash="Default"
 End Sub
 
+Sub SkillShotPup6_Timer
+If HasPuP=False then exit Sub
+	SkillShotPup6.Enabled=False
+	SkillPupFlash="Default"
+End Sub
+
+Sub SkillShotPup7_Timer
+If HasPuP=False then exit Sub
+	SkillShotPup7.Enabled=False
+	SkillPupFlash="Default"
+End Sub
+Sub SkillShotPup8_Timer
+If HasPuP=False then exit Sub
+	SkillShotPup8.Enabled=False
+	SkillPupFlash="Default"
+End Sub
+
+Sub SkillShotPup9_Timer
+If HasPuP=False then exit Sub
+	SkillShotPup9.Enabled=False
+	SkillPupFlash="Default"
+End Sub
+
+Sub SkillShotPup10_Timer
+If HasPuP=False then exit Sub
+	SkillShotPup10.Enabled=False
+	SkillPupFlash="Default"
+End Sub
+
+Sub SkillShotPup11_Timer
+If HasPuP=False then exit Sub
+	SkillShotPup11.Enabled=False
+	SkillPupFlash="Default"
+End Sub
+
+Sub SkillShotPup12_Timer
+If HasPuP=False then exit Sub
+	SkillShotPup12.Enabled=False
+	SkillPupFlash="Default"
+End Sub
+
+
+Sub Scorepop_Timer
+ Scorepop.enabled=False
+ puPlayer.LabelSet pDMD,"Player","" ,0,"{'mt':2, 'shadowcolor':2949120, 'shadowstate':2,'xoffset':2, 'yoffset':8, 'bold':1, 'outline':2 }"
+puPlayer.LabelSet pDMD,"Scorlogo","Gif\\blank.gif",1,"{'mt':2,'color':111111, 'width': 35, 'height': 30., 'anigif': 130 ,}"
+End Sub
+
+' Scroll Attract
+Sub ScrollAttract
+	If pDMDmode="attract" then
+	 pDMD_Sequence.Interval = 1
+	End If
+	If pDMDmode="go1" then
+	 pDMD_Sequence.Interval = 1
+	End If
+	If pDMDmode="go2" then
+	 pDMD_Sequence.Interval = 1
+	End If
+	If pDMDmode="go3" then
+	 pDMD_Sequence.Interval = 1
+	End If
+	If pDMDmode="go4" then
+	 pDMD_Sequence.Interval = 1
+	End If
+End Sub
